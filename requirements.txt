@@ -1,0 +1,7 @@
+torch>=2.5
+transformers>=4.51
+safetensors
+huggingface_hub
+accelerate
+datasets
+lm-eval>=0.4.8
