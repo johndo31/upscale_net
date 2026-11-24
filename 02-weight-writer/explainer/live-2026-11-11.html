@@ -1,0 +1,842 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Weight Writer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one reading column of lab notes; figures, the verifier and the chart sit in bordered "instrument" panels. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --sunken: #eceef2;
+  --ink: #15181e;
+  --ink-2: #464c58;
+  --muted: #6a7080;
+  --rule: #d9dde4;
+  --accent: #2851b8;
+  --accent-soft: #dbe4f8;
+  --pass: #11713f;
+  --pass-bg: #e2f2e8;
+  --fail: #b8322b;
+  --fail-bg: #f9e3e1;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --bar: #8ea6d6;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-3: 2.25rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111318;
+    --surface: #191c23;
+    --sunken: #20242c;
+    --ink: #e8eaef;
+    --ink-2: #b6bbc6;
+    --muted: #8b91a0;
+    --rule: #2d323c;
+    --accent: #8aa8ff;
+    --accent-soft: #24304d;
+    --pass: #4cc983;
+    --pass-bg: #163325;
+    --fail: #ff8077;
+    --fail-bg: #3a1e1c;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --bar: #4f6aa6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111318;
+  --surface: #191c23;
+  --sunken: #20242c;
+  --ink: #e8eaef;
+  --ink-2: #b6bbc6;
+  --muted: #8b91a0;
+  --rule: #2d323c;
+  --accent: #8aa8ff;
+  --accent-soft: #24304d;
+  --pass: #4cc983;
+  --pass-bg: #163325;
+  --fail: #ff8077;
+  --fail-bg: #3a1e1c;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --bar: #4f6aa6;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 56px;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 780px; margin: 0 auto; display: grid; gap: 56px; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-2); font-weight: 600; letter-spacing: -0.005em; }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; max-width: 66ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.muted { color: var(--muted); }
+.small { font-size: var(--step--1); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+header .lede { font-size: var(--step-1); color: var(--ink-2); max-width: 36ch; line-height: 1.4; }
+.status {
+  display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 6px 12px; justify-self: start;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pass); flex: none; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: var(--step--1); }
+nav.toc a { color: var(--ink-2); text-decoration: none; font-family: var(--font-mono); }
+nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+/* sections */
+section { display: grid; gap: 18px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head .label { color: var(--accent); }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 18px;
+  min-width: 0;
+}
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+figcaption { font-size: var(--step--1); color: var(--muted); max-width: 66ch; }
+.svg-wrap { overflow-x: auto; }
+svg { display: block; max-width: 100%; height: auto; }
+.loop-svg { width: 100%; max-width: 540px; margin: 0 auto; }
+
+/* three sources */
+.sources { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.source { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; background: var(--surface); display: grid; gap: 2px; align-content: start; }
+.source b { font-weight: 600; }
+.source span { font-size: var(--step--1); color: var(--muted); }
+.source.on { border-color: var(--accent); background: var(--accent-soft); }
+.source.on span { color: var(--ink-2); }
+
+/* formula + prompt */
+.formula {
+  font-family: var(--font-mono); font-size: 0.95rem; background: var(--sunken);
+  border-radius: 6px; padding: 12px 14px; overflow-x: auto; white-space: pre; line-height: 1.7;
+}
+.task-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+pre.prompt {
+  margin: 0; font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.65;
+  background: var(--sunken); border-radius: 6px; padding: 12px 14px; overflow-x: auto;
+}
+pre.prompt .p { color: var(--ink-2); }
+pre.prompt .a { color: var(--ink); font-weight: 600; }
+pre.prompt .tag { display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+pre.prompt .tag + .a, pre.prompt .tag + .p { display: inline; }
+pre.prompt hr { border: 0; border-top: 1px dashed var(--rule); margin: 8px 0; }
+
+/* svg diagram classes */
+.d-node { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.d-node.in { fill: var(--sunken); }
+.d-edge { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.d-edge.neg { stroke-dasharray: 5 4; }
+.d-arrow { fill: var(--ink-2); }
+.d-text { fill: var(--ink); font-family: var(--font-mono); font-size: 15px; }
+.d-w { fill: var(--ink); font-family: var(--font-mono); font-size: 14px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; }
+.d-note { fill: var(--muted); font-family: var(--font-mono); font-size: 12.5px; }
+.d-head { fill: var(--muted); font-family: var(--font-body); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.d-box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.d-box.key { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
+.d-title { fill: var(--ink); font-family: var(--font-body); font-size: 16px; font-weight: 600; }
+.d-sub { fill: var(--ink-2); font-family: var(--font-body); font-size: 13px; }
+.d-lab { fill: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+/* verifier */
+.verifier { display: grid; gap: 16px; }
+.v-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.v-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.weights { display: grid; gap: 10px; font-family: var(--font-mono); font-size: 0.95rem; }
+.wline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.wline .nm { min-width: 2.6em; font-weight: 600; }
+.weights input {
+  width: 3.4em; font-family: var(--font-mono); font-size: 0.95rem; text-align: center;
+  padding: 4px 2px; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--sunken); color: var(--ink); font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.weights input::-webkit-outer-spin-button, .weights input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.weights input.changed { border-color: var(--accent); background: var(--accent-soft); }
+.v-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+button {
+  font-family: var(--font-body); font-size: var(--step--1); font-weight: 500;
+  padding: 6px 14px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+}
+button:hover { border-color: var(--ink-2); }
+button.warn { border-color: var(--fail); color: var(--fail); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.tt td { font-family: var(--font-mono); }
+.tt td.c { text-align: center; }
+.tt th.c { text-align: center; }
+.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600; padding: 1px 8px; border-radius: 10px; }
+.chk.ok { color: var(--pass); background: var(--pass-bg); }
+.chk.bad { color: var(--fail); background: var(--fail-bg); }
+.verdict {
+  display: grid; gap: 4px; border-radius: 6px; padding: 12px 14px;
+  border: 1px solid var(--rule); background: var(--sunken);
+}
+.verdict .big { font-weight: 600; font-size: 1.05rem; }
+.verdict.ok .big { color: var(--pass); }
+.verdict.bad .big { color: var(--fail); }
+.verdict .relabel { color: var(--ink); }
+
+/* difficulty bars */
+.bars { display: grid; gap: 8px; }
+.brow { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3em; gap: 10px; align-items: center; font-size: var(--step--1); }
+.brow .track { height: 14px; background: var(--sunken); border-radius: 3px; overflow: hidden; }
+.brow .fill { height: 100%; background: var(--bar); border-radius: 0 3px 3px 0; min-width: 2px; }
+.brow .n { font-family: var(--font-mono); text-align: right; }
+.brow .note { grid-column: 2 / 4; color: var(--muted); margin-top: -6px; font-size: 0.75rem; }
+.split { display: flex; height: 26px; border-radius: 4px; overflow: hidden; gap: 2px; }
+.split div { display: flex; align-items: center; padding: 0 8px; font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap; overflow: hidden; }
+.split .s-ex { background: var(--rule); color: var(--ink); flex: 4 0 26px; padding: 0; justify-content: center; }
+.split .s-tr { background: var(--bar); color: var(--ink); flex: 205; }
+.split .s-ho { background: var(--accent); color: var(--surface); flex: 63; }
+.split-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--step--1); color: var(--ink-2); }
+.split-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* strategies */
+.strats { display: grid; gap: 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.strat { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 4px 16px; padding: 14px 16px; border-top: 1px solid var(--rule); }
+.strat:first-child { border-top: 0; }
+.strat .nm { font-weight: 600; }
+.strat .nm small { display: block; font-weight: 400; font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { font-family: var(--font-mono); font-size: 0.72rem; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--rule); color: var(--ink-2); }
+
+/* chart */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: var(--step--1); color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 18px; height: 2px; border-radius: 1px; display: inline-block; }
+.chart-wrap { position: relative; min-width: 0; }
+#chart svg { width: 100%; }
+.c-grid { stroke: var(--rule); stroke-width: 1; }
+.c-axis { fill: var(--muted); font-family: var(--font-mono); font-size: 11.5px; }
+.c-end { fill: var(--ink); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+.c-end2 { fill: var(--muted); font-family: var(--font-mono); font-size: 11.5px; }
+.c-cross { stroke: var(--muted); stroke-width: 1; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  white-space: nowrap; display: grid; gap: 2px;
+}
+.tip b { font-family: var(--font-mono); font-weight: 600; }
+.tip .r { display: flex; align-items: center; gap: 6px; }
+.tip .r i { width: 10px; height: 2px; display: inline-block; }
+
+.results td.v { font-family: var(--font-mono); white-space: nowrap; }
+.results .cell { display: flex; align-items: center; gap: 8px; }
+.results .cell .t { width: 64px; height: 8px; background: var(--sunken); border-radius: 2px; overflow: hidden; flex: none; }
+.results .cell .t div { height: 100%; background: var(--bar); }
+.results .cell .x { min-width: 3.2em; text-align: right; }
+.results tr.grp td { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding-top: 14px; border-bottom: 0; }
+.table-wrap { overflow-x: auto; }
+
+/* findings */
+.findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.findings li { display: grid; grid-template-columns: 2em minmax(0, 1fr); gap: 0 10px; }
+.findings li::before { content: counter(f); counter-increment: f; font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.findings { counter-reset: f; }
+.findings b { font-weight: 600; }
+.caveat { border-left: 3px solid var(--muted); padding: 2px 0 2px 12px; color: var(--ink-2); font-size: var(--step--1); }
+
+/* queue */
+.queue { list-style: none; margin: 0; padding: 0; display: grid; }
+.queue li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.queue li:first-child { border-top: 1px solid var(--rule); }
+.queue .i { font-family: var(--font-mono); color: var(--muted); }
+.queue .m { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); text-align: right; }
+.queue .grp { display: block; grid-column: 1 / -1; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 14px 0 0; border: 0; }
+.queue li.grp { border-bottom: 0; padding-bottom: 0; }
+.queue li.grp:first-child { border-top: 0; padding-top: 0; }
+.queue li.grp + li { border-top: 1px solid var(--rule); }
+.decision { background: var(--accent-soft); border-radius: 6px; padding: 12px 14px; }
+
+/* hardware */
+.hw { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.hw .panel { display: grid; gap: 8px; align-content: start; }
+.hw dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: var(--step--1); }
+.hw dt { color: var(--muted); }
+.hw dd { margin: 0; font-family: var(--font-mono); }
+
+footer { border-top: 1px solid var(--rule); padding-top: 18px; font-size: var(--step--1); color: var(--muted); }
+
+@media (max-width: 640px) {
+  body { padding-block: 24px 40px; }
+  .page { gap: 44px; }
+  h1 { font-size: 1.9rem; }
+  .task-grid, .v-grid, .hw { grid-template-columns: minmax(0, 1fr); }
+  .sources { grid-template-columns: minmax(0, 1fr); }
+  .strat { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: 14px; }
+  .results .cell .t { display: none; }
+  .results th, .results td { padding: 6px 5px; }
+  .panel.svg-wrap { padding: 8px; }
+  .d-text { font-size: 17px; }
+  .d-w { font-size: 16px; }
+  .d-note { font-size: 14px; }
+  .d-head { font-size: 13px; }
+  .d-title { font-size: 18px; }
+  .d-sub { font-size: 14.5px; }
+  .d-lab { font-size: 13px; }
+}
+</style>
+
+<div class="page">
+
+<header>
+  <h1>Weight Writer</h1>
+  <p class="lede">Can a small language model teach itself to write the weights of a neural network?</p>
+  <div class="status"><span class="dot" aria-hidden="true"></span><span>Status: experiment running. Numbers as of <span data-fact="asOf">11 November 2026, 10:22 CET</span>.</span></div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#question">Question</a><a href="#task">Task</a><a href="#taskset">Task set</a><a href="#loop">Loop</a><a href="#results">Results</a><a href="#meaning">Meaning</a><a href="#next">Next</a><a href="#hardware">Hardware</a>
+  </nav>
+</header>
+
+<section id="question">
+  <div class="sec-head"><span class="label">1 · The question</span><h2>Learning a skill from a checker alone</h2></div>
+  <p>Language models normally learn from data. A recent MIT CSAIL post, <a href="https://rikiyat.github.io/blog/weight-space-programming/" target="_blank" rel="noopener">Sparks of Weight-Space Programming</a>, showed that a frontier model can write the weights of a neural network directly, as numbers, without training it.</p>
+  <p>We ask a narrower question. Can a small model, Qwen2.5-0.5B (half a billion parameters), learn that skill by itself, when the only feedback is a checker that runs what it wrote? There is no teacher model, and there are no solved examples beyond the four in the prompt.</p>
+  <div class="panel" style="display:grid;gap:12px">
+    <span class="label">Why it matters to us</span>
+    <p>The first experiment, On Computable Growth, ended with three places new information can come from. This experiment tests the third one, which was not run then.</p>
+    <div class="sources">
+      <div class="source"><b>Data</b><span>Learn from more examples</span></div>
+      <div class="source"><b>Another model</b><span>Learn from a teacher</span></div>
+      <div class="source on"><b>Compute + verifier</b><span>Try, check, learn from what passed. This experiment.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="task">
+  <div class="sec-head"><span class="label">2 · The task</span><h2>Truth table in, weights out</h2></div>
+  <p>The model gets a truth table and must answer with the weights of a fixed tiny network. Two-input tasks use 2 hidden units. Three-input tasks use 3.</p>
+  <div class="formula">hidden = relu(W1 · x + b1)
+output = 1 if W2 · hidden + b2 &gt; 0.5 else 0</div>
+
+  <div class="task-grid">
+    <figure>
+      <pre class="prompt"><span class="tag">Prompt</span><span class="p">Task: 2 inputs, 2 hidden units.
+00 -&gt; 0
+01 -&gt; 1
+10 -&gt; 1
+11 -&gt; 0</span>
+<hr><span class="tag">Model's answer</span><span class="a">W1 = [[1, 1], [1, 1]]
+b1 = [0, -1]
+W2 = [1, -2]
+b2 = 0</span></pre>
+      <figcaption>The real prompt format and a real answer, for XOR.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="panel svg-wrap">
+        <svg viewBox="0 0 460 280" role="img" aria-label="The XOR network: inputs x1 and x2 each connect to both hidden ReLU units with weight 1. Hidden unit 1 has bias 0, hidden unit 2 has bias minus 1. The output sums hidden 1 times 1 and hidden 2 times minus 2, plus bias 0, and outputs 1 if the sum is above 0.5.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" class="d-arrow"/>
+            </marker>
+          </defs>
+          <line class="d-edge" x1="72" y1="80" x2="197" y2="80" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="72" y1="180" x2="197" y2="180" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="69.2" y1="90.7" x2="201.2" y2="164" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="69.2" y1="169.3" x2="201.2" y2="96" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="258.8" y1="88.5" x2="368.3" y2="120.7" marker-end="url(#ah)"/>
+          <line class="d-edge neg" x1="258.8" y1="171.5" x2="368.3" y2="139.3" marker-end="url(#ah)"/>
+
+          <text class="d-w" x="130" y="72" text-anchor="middle">1</text>
+          <text class="d-w" x="130" y="198" text-anchor="middle">1</text>
+          <text class="d-w" x="104" y="115" text-anchor="middle">1</text>
+          <text class="d-w" x="104" y="155" text-anchor="middle">1</text>
+          <text class="d-w" x="315" y="94" text-anchor="middle">1</text>
+          <text class="d-w" x="315" y="178" text-anchor="middle">−2</text>
+
+          <circle class="d-node in" cx="50" cy="80" r="22"/>
+          <circle class="d-node in" cx="50" cy="180" r="22"/>
+          <circle class="d-node" cx="230" cy="80" r="30"/>
+          <circle class="d-node" cx="230" cy="180" r="30"/>
+          <circle class="d-node" cx="400" cy="130" r="30"/>
+          <text class="d-text" x="50" y="85" text-anchor="middle">x1</text>
+          <text class="d-text" x="50" y="185" text-anchor="middle">x2</text>
+          <text class="d-text" x="230" y="85" text-anchor="middle">h1</text>
+          <text class="d-text" x="230" y="185" text-anchor="middle">h2</text>
+          <text class="d-text" x="400" y="135" text-anchor="middle">out</text>
+
+          <text class="d-note" x="230" y="38" text-anchor="middle">bias 0</text>
+          <text class="d-note" x="230" y="230" text-anchor="middle">bias −1</text>
+          <text class="d-note" x="400" y="88" text-anchor="middle">bias 0</text>
+          <text class="d-note" x="400" y="182" text-anchor="middle">&gt; 0.5 → 1</text>
+
+          <text class="d-head" x="50" y="268" text-anchor="middle">inputs</text>
+          <text class="d-head" x="230" y="268" text-anchor="middle">hidden, ReLU</text>
+          <text class="d-head" x="400" y="268" text-anchor="middle">output</text>
+        </svg>
+      </div>
+      <figcaption>The same answer drawn as a network. On input 11, h1 = 2 and h2 = 1, so the output sum is 2 − 2 = 0 and the network says 0. The dashed edge is the negative weight.</figcaption>
+    </figure>
+  </div>
+
+  <div class="panel verifier" id="verifier">
+    <div class="v-top">
+      <h3>Try the verifier</h3>
+      <span class="label">Target: XOR</span>
+    </div>
+    <p class="small muted">This is what the checker does. It runs the network on all four inputs and compares each output with the truth table. Edit any weight.</p>
+    <div class="v-grid">
+      <div class="weights" aria-label="Network weights">
+        <div class="wline"><span class="nm">W1 =</span>[[<input id="w1_00" type="number" step="1" aria-label="W1 row 1 column 1">,<input id="w1_01" type="number" step="1" aria-label="W1 row 1 column 2">],</div>
+        <div class="wline"><span class="nm"></span>&nbsp;[<input id="w1_10" type="number" step="1" aria-label="W1 row 2 column 1">,<input id="w1_11" type="number" step="1" aria-label="W1 row 2 column 2">]]</div>
+        <div class="wline"><span class="nm">b1 =</span>[<input id="b1_0" type="number" step="1" aria-label="b1 first">,<input id="b1_1" type="number" step="1" aria-label="b1 second">]</div>
+        <div class="wline"><span class="nm">W2 =</span>[<input id="w2_0" type="number" step="1" aria-label="W2 first">,<input id="w2_1" type="number" step="1" aria-label="W2 second">]</div>
+        <div class="wline"><span class="nm">b2 =</span>&nbsp;<input id="b2" type="number" step="1" aria-label="b2"></div>
+        <div class="v-btns">
+          <button type="button" id="btn-reset">Reset</button>
+          <button type="button" id="btn-break" class="warn">Break it</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tt">
+          <thead><tr><th>Input</th><th class="c">XOR</th><th class="c">Network</th><th>Check</th></tr></thead>
+          <tbody id="tt-body">
+            <tr><td>00</td><td class="c">0</td><td class="c">0</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>01</td><td class="c">1</td><td class="c">1</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>10</td><td class="c">1</td><td class="c">1</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>11</td><td class="c">0</td><td class="c">0</td><td><span class="chk ok">✓ pass</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="verdict ok" id="verdict" aria-live="polite">
+      <span class="big" id="v-main">Passes: all 4 rows match XOR.</span>
+      <span class="mono small">Network computes: <b id="v-bits">0110</b> <span id="v-name" class="muted">(XOR)</span></span>
+      <span class="relabel small" id="v-relabel" hidden></span>
+    </div>
+    <p class="small muted">A wrong answer still computes some function. Press "Break it" to see one. This is the idea behind the hindsight strategy in section 4.</p>
+  </div>
+</section>
+
+<section id="taskset">
+  <div class="sec-head"><span class="label">3 · The task set</span><h2>Every Boolean function of two and three inputs</h2></div>
+  <p>The tasks are all Boolean functions of two inputs (16) and of three inputs (256). An exhaustive search confirmed that every one is solvable with small integer weights between −2 and 2.</p>
+  <figure class="panel">
+    <span class="label">Hidden units needed, 256 three-input functions</span>
+    <div class="bars">
+      <div class="brow"><span>0 units</span><div class="track"><div class="fill" style="width:1.33%"></div></div><span class="n">2</span><span class="note">the two constants</span></div>
+      <div class="brow"><span>1 unit</span><div class="track"><div class="fill" style="width:68%"></div></div><span class="n">102</span></div>
+      <div class="brow"><span>2 units</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">150</span></div>
+      <div class="brow"><span>3 units</span><div class="track"><div class="fill" style="width:1.33%"></div></div><span class="n">2</span><span class="note">parity and its negation</span></div>
+    </div>
+  </figure>
+  <figure class="panel">
+    <span class="label">How the 272 functions are used</span>
+    <div class="split" role="img" aria-label="4 prompt examples, 205 training tasks, 63 held-out tasks">
+      <div class="s-ex" title="4 worked examples">4</div>
+      <div class="s-tr">205</div>
+      <div class="s-ho">63</div>
+    </div>
+    <div class="split-key">
+      <span><i style="background:var(--rule)"></i>4 worked examples in the prompt</span>
+      <span><i style="background:var(--bar)"></i>205 training tasks</span>
+      <span><i style="background:var(--accent)"></i>63 held-out tasks</span>
+    </div>
+  </figure>
+  <p>Whole families of functions are held out together. A family is a function plus all its versions with the inputs permuted. That way the held-out tasks are really new. Parity is held out.</p>
+</section>
+
+<section id="loop">
+  <div class="sec-head"><span class="label">4 · The loop</span><h2>Attempt, verify, keep, train, repeat</h2></div>
+  <figure>
+    <div class="panel svg-wrap">
+      <svg class="loop-svg" viewBox="0 0 460 274" role="img" aria-label="One round of the loop: Attempt, 16 tries per task, sends written networks to Verify, which runs each network on every input. Verdicts go to Keep, which chooses what becomes training data. Kept answers go to Train, which fine-tunes the model. The new model goes back to Attempt.">
+        <defs>
+          <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="d-arrow"/>
+          </marker>
+        </defs>
+        <rect class="d-box" x="10" y="10" width="170" height="84" rx="6"/>
+        <rect class="d-box" x="280" y="10" width="170" height="84" rx="6"/>
+        <rect class="d-box key" x="280" y="180" width="170" height="84" rx="6"/>
+        <rect class="d-box" x="10" y="180" width="170" height="84" rx="6"/>
+
+        <text class="d-title" x="95" y="42" text-anchor="middle">Attempt</text>
+        <text class="d-sub" x="95" y="64" text-anchor="middle">16 tries per task</text>
+        <text class="d-title" x="365" y="42" text-anchor="middle">Verify</text>
+        <text class="d-sub" x="365" y="64" text-anchor="middle">run each network</text>
+        <text class="d-sub" x="365" y="81" text-anchor="middle">on every input</text>
+        <text class="d-title" x="365" y="212" text-anchor="middle">Keep</text>
+        <text class="d-sub" x="365" y="234" text-anchor="middle">choose what becomes</text>
+        <text class="d-sub" x="365" y="251" text-anchor="middle">training data</text>
+        <text class="d-title" x="95" y="212" text-anchor="middle">Train</text>
+        <text class="d-sub" x="95" y="234" text-anchor="middle">fine-tune the model</text>
+        <text class="d-sub" x="95" y="251" text-anchor="middle">on what was kept</text>
+
+        <line class="d-edge" x1="182" y1="52" x2="276" y2="52" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="365" y1="96" x2="365" y2="176" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="278" y1="222" x2="184" y2="222" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="95" y1="178" x2="95" y2="98" marker-end="url(#ah2)"/>
+
+        <text class="d-lab" x="230" y="44" text-anchor="middle">networks</text>
+        <text class="d-lab" x="374" y="141" text-anchor="start">verdicts</text>
+        <text class="d-lab" x="230" y="214" text-anchor="middle">kept answers</text>
+        <text class="d-lab" x="86" y="141" text-anchor="end">new model</text>
+        <text class="d-head" x="230" y="141" text-anchor="middle">one round</text>
+      </svg>
+    </div>
+    <figcaption>One round. Each round starts from the model the previous round trained. The four strategies below differ only in the Keep step.</figcaption>
+  </figure>
+
+  <div class="strats">
+    <div class="strat">
+      <div class="nm">Pass-only<small>loop</small></div>
+      <div>Keep only answers that solve their own task.
+        <div class="chips"><span class="chip">checked</span><span class="chip">wrong answers dropped</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Hindsight<small>loop</small></div>
+      <div>Every valid network computes some function. Relabel each answer with the function it actually computes. A wrong answer becomes a correct example for a different task. Answers for held-out functions are thrown away.
+        <div class="chips"><span class="chip">checked</span><span class="chip">wrong answers relabelled</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Unverified<small>control</small></div>
+      <div>Keep answers without checking them. Expected to teach nothing.
+        <div class="chips"><span class="chip">not checked</span><span class="chip">everything kept</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Teacher<small>ceiling, not a loop</small></div>
+      <div>Train once on correct solutions found by brute-force search.
+        <div class="chips"><span class="chip">solutions given</span><span class="chip">one training run</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="sec-head"><span class="label">5 · What we know so far</span><h2>The hindsight loop climbs, slowly</h2></div>
+  <p>The base model writes a correctly shaped network <span data-fact="baseShapeOk">91%</span> of the time. It solves only <span data-fact="baseSolved16">7 of 205</span> training tasks within 16 tries, and <span data-fact="baseHeldOut64">none of the 63</span> held-out tasks even with 64 tries.</p>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Training tasks solved within 16 tries</h3><span class="label">percent, by round</span></div>
+    <div class="legend" id="legend"></div>
+    <div class="chart-wrap">
+      <div id="chart"></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <figcaption>Round 0 is the base model. The pass-only loop is now running on the GPU too. Its first round there is also 3.4%.</figcaption>
+  </figure>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Solved on the first, greedy try</h3><span class="label">percent of tasks</span></div>
+    <div class="table-wrap">
+      <table class="results">
+        <thead><tr><th>Model</th><th>Training (205)</th><th>Held out (63)</th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </figure>
+
+  <p>The hindsight pool of known functions grew from <span data-fact="poolFirst">24</span> functions in round 1 to <span data-fact="poolLatest">47</span> in round <span data-fact="poolLatestRound">10</span>. With the 150-pass teacher, <span data-fact="teacherHeldOut16">8 of 63</span> held-out tasks are solved within 16 tries (<span data-fact="teacherHeldOut16Pct">12.7%</span>).</p>
+</section>
+
+<section id="meaning">
+  <div class="sec-head"><span class="label">6 · What it means so far</span><h2>Four findings</h2></div>
+  <ol class="findings">
+    <li><span><b>Self-improvement from a verifier alone works here.</b> With no teacher, the hindsight loop climbed in eight of its ten rounds and never fell back.</span></li>
+    <li><span><b>It is slow.</b> A trained model mostly repeats functions it already knows, so each round finds only a few new ones. Exploration looks like the bottleneck.</span></li>
+    <li><span><b>Pass-only cannot get started.</b> With 7 successes to learn from, it stayed at 7 for four rounds.</span></li>
+    <li><span><b>The model memorises more than it generalises.</b> Given correct solutions, it reproduces all 205 training functions, then solves about 8% of unseen ones on the first try. Three inputs give too few functions to learn the general skill.</span></li>
+  </ol>
+  <p class="caveat">These are interim results from single runs with one random seed.</p>
+</section>
+
+<section id="next">
+  <div class="sec-head"><span class="label">7 · Running now and next</span><h2>The queue on the pod</h2></div>
+  <ol class="queue">
+    <li class="grp"><span class="grp">Main run, in order</span></li>
+    <li><span class="i">1</span><span>Hindsight loop</span><span class="m">10 rounds, done</span></li>
+    <li><span class="i">2</span><span>Pass-only loop</span><span class="m">6 rounds, running</span></li>
+    <li><span class="i">3</span><span>Unverified control</span><span class="m">3 rounds</span></li>
+    <li class="grp"><span class="grp">Then three follow-ups</span></li>
+    <li><span class="i">4</span><span>Hindsight with hotter sampling</span><span class="m">temperature 1.3</span></li>
+    <li><span class="i">5</span><span>Hindsight with more tries</span><span class="m">64 per task</span></li>
+    <li><span class="i">6</span><span>Main hindsight loop, continued</span><span class="m">to round 30</span></li>
+  </ol>
+  <p>The pod stops itself when they finish.</p>
+  <div class="decision"><span class="label">Open decision afterwards</span><p>Move to four-input functions (65,536 tasks), where generalisation has room to appear.</p></div>
+</section>
+
+<section id="hardware">
+  <div class="sec-head"><span class="label">8 · Where it runs</span><h2>From a laptop to one rented GPU</h2></div>
+  <div class="hw">
+    <div class="panel">
+      <span class="label">Before</span>
+      <h3>Apple M1 laptop</h3>
+      <dl>
+        <dt>Training</dt><dd>about 10 s per step</dd>
+        <dt>Memory</dt><dd>repeated failures under an 8 GB limit</dd>
+        <dt>Full run</dt><dd>15 hours or more</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <span class="label">Now</span>
+      <h3>Runpod, RTX 4000 Ada</h3>
+      <dl>
+        <dt>Price</dt><dd>$0.28 per hour</dd>
+        <dt>Training</dt><dd>2.8 steps per second</dd>
+        <dt>Sampling</dt><dd>about 120 answers per second</dd>
+        <dt>Speed-up</dt><dd>roughly 28× in training</dd>
+      </dl>
+    </div>
+  </div>
+  <p>Expected cost for everything queued is about $1.50. That is an estimate. Results are stored on a network volume and copied to the laptop every ten minutes.</p>
+</section>
+
+<footer>Project folder: weight_writer.</footer>
+
+</div>
+
+<script>
+/* ---- All result numbers live here. Edit this object to update the page. ---- */
+const DATA = {
+  asOf: "11 November 2026, 10:22 CET",
+  curve: {
+    title: "Training tasks solved within 16 tries",
+    yMax: 25,
+    rounds: 10,                      // x axis runs 0..rounds
+    series: [
+      { name: "Hindsight loop (cloud GPU)", short: "Hindsight", color: "--series-1",
+        values: [3.4, 11.7, 13.7, 16.1, 16.1, 17.1, 20.0, 21.5, 22.4, 22.4, 22.9] },
+      { name: "Pass-only loop (earlier Mac run)", short: "Pass-only", color: "--series-2",
+        values: [3.4, 3.4, 3.4, 3.4, 3.4] }
+    ]
+  },
+  // percent of tasks solved on the first, greedy try: [training, held-out]
+  table: [
+    { group: "Baseline" },
+    { label: "Base model", train: 0, heldOut: 0 },
+    { group: "Teacher (ceiling)" },
+    { label: "Teacher, 10 passes over the solutions", train: 4.9, heldOut: 0 },
+    { label: "Teacher, 40 passes", train: 100, heldOut: 1.6 },
+    { label: "Teacher, 150 passes", train: 100, heldOut: 7.9 },
+    { group: "Hindsight loop (no teacher)" },
+    { label: "Hindsight loop, round 1", train: 11.7, heldOut: 0 },
+    { label: "Hindsight loop, round 10", train: 22.9, heldOut: 0 }
+  ],
+  facts: {
+    baseShapeOk: "91%",
+    baseSolved16: "7 of 205",
+    baseHeldOut64: "none of the 63",
+    poolFirst: "24",
+    poolLatest: "47",
+    poolLatestRound: "10",
+    teacherHeldOut16: "8 of 63",
+    teacherHeldOut16Pct: "12.7%"
+  }
+};
+
+/* ---- verifier: pure functions (also checked under node) ---- */
+/* VERIFIER-START */
+function runNet(W1, b1, W2, b2, x) {
+  const h = W1.map((row, i) => Math.max(0, row.reduce((s, w, j) => s + w * x[j], 0) + b1[i]));
+  const z = W2.reduce((s, w, i) => s + w * h[i], 0) + b2;
+  return z > 0.5 ? 1 : 0;
+}
+function computeBits(W1, b1, W2, b2) {
+  return [[0, 0], [0, 1], [1, 0], [1, 1]].map(x => runNet(W1, b1, W2, b2, x)).join("");
+}
+/* VERIFIER-END */
+
+const FN_NAMES = {
+  "0000": "constant 0", "0001": "AND", "0010": "x1 and not x2", "0011": "x1",
+  "0100": "not x1 and x2", "0101": "x2", "0110": "XOR", "0111": "OR",
+  "1000": "NOR", "1001": "XNOR", "1010": "not x2", "1011": "x1 or not x2",
+  "1100": "not x1", "1101": "not x1 or x2", "1110": "NAND", "1111": "constant 1"
+};
+const TARGET = "0110";
+const DEFAULTS = { w1_00: 1, w1_01: 1, w1_10: 1, w1_11: 1, b1_0: 0, b1_1: -1, w2_0: 1, w2_1: -2, b2: 0 };
+
+(function verifier() {
+  const ids = Object.keys(DEFAULTS);
+  const el = id => document.getElementById(id);
+  function setAll(vals) { ids.forEach(id => { el(id).value = vals[id]; }); update(); }
+  function update() {
+    const v = {};
+    let missing = false;
+    ids.forEach(id => {
+      const n = parseFloat(el(id).value);
+      if (!isFinite(n)) missing = true;
+      v[id] = n;
+      el(id).classList.toggle("changed", isFinite(n) && n !== DEFAULTS[id]);
+    });
+    const body = el("tt-body"), verdict = el("verdict");
+    const relabel = el("v-relabel");
+    if (missing) {
+      verdict.className = "verdict bad";
+      el("v-main").textContent = "Fill in every weight with a number.";
+      el("v-bits").textContent = "????"; el("v-name").textContent = "";
+      relabel.hidden = true;
+      return;
+    }
+    const W1 = [[v.w1_00, v.w1_01], [v.w1_10, v.w1_11]], b1 = [v.b1_0, v.b1_1], W2 = [v.w2_0, v.w2_1];
+    const bits = computeBits(W1, b1, W2, v.b2);
+    const inputs = ["00", "01", "10", "11"];
+    let wrong = 0;
+    body.innerHTML = inputs.map((inp, i) => {
+      const ok = bits[i] === TARGET[i];
+      if (!ok) wrong++;
+      return `<tr><td>${inp}</td><td class="c">${TARGET[i]}</td><td class="c">${bits[i]}</td><td>` +
+        (ok ? '<span class="chk ok">✓ pass</span>' : '<span class="chk bad">✗ fail</span>') + "</td></tr>";
+    }).join("");
+    el("v-bits").textContent = bits;
+    el("v-name").textContent = "(" + FN_NAMES[bits] + ")";
+    if (wrong === 0) {
+      verdict.className = "verdict ok";
+      el("v-main").textContent = "Passes: all 4 rows match XOR.";
+      relabel.hidden = true;
+    } else {
+      verdict.className = "verdict bad";
+      el("v-main").textContent = "Fails: " + wrong + " of 4 rows wrong for XOR.";
+      relabel.textContent = "Wrong for XOR, but a correct network for the function " + bits + ".";
+      relabel.hidden = false;
+    }
+  }
+  ids.forEach(id => el(id).addEventListener("input", update));
+  el("btn-reset").addEventListener("click", () => setAll(DEFAULTS));
+  el("btn-break").addEventListener("click", () => setAll(Object.assign({}, DEFAULTS, { w2_0: 1, w2_1: -1 })));
+  setAll(DEFAULTS);
+})();
+
+/* ---- facts in the text ---- */
+document.querySelectorAll("[data-fact]").forEach(node => {
+  const k = node.getAttribute("data-fact");
+  const val = k === "asOf" ? DATA.asOf : DATA.facts[k];
+  if (val != null) node.textContent = val;
+});
+
+/* ---- results table ---- */
+(function table() {
+  const fmt = n => (Number.isInteger(n) ? String(n) : n.toFixed(1)) + "%";
+  const cell = n => `<td class="v"><div class="cell"><span class="x">${fmt(n)}</span><span class="t" aria-hidden="true"><div style="width:${Math.min(100, n)}%"></div></span></div></td>`;
+  document.getElementById("results-body").innerHTML = DATA.table.map(r =>
+    r.group ? `<tr class="grp"><td colspan="3">${r.group}</td></tr>`
+            : `<tr><td>${r.label}</td>${cell(r.train)}${cell(r.heldOut)}</tr>`
+  ).join("");
+})();
+
+/* ---- chart ---- */
+(function chart() {
+  const host = document.getElementById("chart"), tip = document.getElementById("tip");
+  const C = DATA.curve;
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  document.getElementById("legend").innerHTML = C.series.map(s =>
+    `<span><i style="background:var(${s.color})"></i>${s.name}</span>`).join("");
+  const NS = "http://www.w3.org/2000/svg";
+  let geo = null;
+
+  function draw() {
+    const W = Math.max(280, host.clientWidth), H = W < 480 ? 240 : 280;
+    const narrow = W < 480;
+    const m = { l: 36, r: narrow ? 92 : 120, t: 12, b: 34 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const x = r => m.l + (r / C.rounds) * pw;
+    const y = v => m.t + ph - (v / C.yMax) * ph;
+    geo = { x, y, m, pw, ph, W, H };
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${C.title}. ` +
+      C.series.map(se => se.name + ": " + se.values.map((v, i) => "round " + i + " " + v + "%").join(", ")).join(". ") + `">`;
+    for (let v = 0; v <= C.yMax; v += 5) {
+      s += `<line class="c-grid" x1="${m.l}" x2="${m.l + pw}" y1="${y(v)}" y2="${y(v)}"/>`;
+      s += `<text class="c-axis" x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${v}%</text>`;
+    }
+    for (let r = 0; r <= C.rounds; r++) {
+      s += `<text class="c-axis" x="${x(r)}" y="${m.t + ph + 18}" text-anchor="middle">${r}</text>`;
+    }
+    s += `<text class="c-axis" x="${m.l + pw / 2}" y="${H - 2}" text-anchor="middle">round</text>`;
+    s += `<line class="c-cross" id="cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/>`;
+    C.series.forEach(se => {
+      const col = cssVar(se.color);
+      const pts = se.values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+      s += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      se.values.forEach((v, i) => {
+        const last = i === se.values.length - 1;
+        s += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 4.5 : 3}" fill="${col}" stroke="${cssVar("--surface")}" stroke-width="2"/>`;
+      });
+      const li = se.values.length - 1, lv = se.values[li];
+      s += `<text class="c-end" x="${x(li) + 10}" y="${y(lv) - 1}">${se.short}</text>`;
+      s += `<text class="c-end2" x="${x(li) + 10}" y="${y(lv) + 13}">${lv.toFixed(1)}%</text>`;
+    });
+    s += `<rect id="hit" x="${m.l - 10}" y="0" width="${pw + 20}" height="${H}" fill="transparent"/>`;
+    s += `</svg>`;
+    host.innerHTML = s;
+    const hit = host.querySelector("#hit");
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; host.querySelector("#cross").setAttribute("visibility", "hidden"); });
+  }
+
+  function move(e) {
+    const rect = host.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const r = Math.max(0, Math.min(C.rounds, Math.round((px - geo.m.l) / geo.pw * C.rounds)));
+    const cx = geo.x(r);
+    const cross = host.querySelector("#cross");
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    tip.innerHTML = `<b>Round ${r}${r === 0 ? " (base model)" : ""}</b>` + C.series.map(se => {
+      const v = se.values[r];
+      return `<span class="r"><i style="background:var(${se.color})"></i>${se.short}: ${v == null ? "not run" : v.toFixed(1) + "%"}</span>`;
+    }).join("");
+    tip.hidden = false;
+    const tw = tip.offsetWidth;
+    let left = cx + 12;
+    if (left + tw > geo.W) left = cx - 12 - tw;
+    tip.style.left = Math.max(0, left) + "px";
+    tip.style.top = geo.m.t + 4 + "px";
+  }
+
+  draw();
+  let last = host.clientWidth;
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { if (host.clientWidth !== last) { last = host.clientWidth; draw(); } }).observe(host);
+  }
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+
+</body></html>

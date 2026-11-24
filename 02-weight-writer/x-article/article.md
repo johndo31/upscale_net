@@ -1,0 +1,129 @@
+_A 0.5B model learned to write the weights of tiny neural networks from nothing but an exact checker. Random guessing plus ordinary training did it better, and nothing carried over to unseen tasks._
+
+_Qwen2.5-0.5B, every Boolean function of two and three inputs, one rented GPU, about $3._
+
+_By Niklas, [drniklas.com](https://drniklas.com). I also host the [Venture Grade](https://venturegrade.drniklas.com) podcast._
+
+## The short answer
+
+A small language model can teach itself a skill it does not have. I gave Qwen2.5-0.5B a truth table and asked it to write, as text, the weights of a tiny neural network that computes it. It had no teacher and no solved data beyond four worked examples in the prompt, only a checker that runs what it wrote. Over 30 rounds of trying, checking and training on its own checked answers, the share of training tasks it solved on the first try rose from 0% to 32.2%. That is self-training driven by a verifier, not recursive self-improvement, and the details are sobering:
+
+1. **A checker alone is enough to learn from.** First-try success went from 0% to 32.2% (66 of 205 tasks), and to 42.0% with more random sampling. Without the check it ended at 0%.
+2. **How well the model explores sets the limit.** Sampling more randomly, or trying more often, nearly doubled the result after 10 rounds.
+3. **Random guessing plus ordinary training beats every loop.** A model trained once on randomly generated, checked networks solves 85.4%.
+4. **Nothing generalises.** On 63 tasks kept out of training, first-try success stayed near 0% in every loop.
+5. **It is not recursive self-improvement.** The loop fails three plain tests, and its gains shrink round by round.
+6. **Giving the model control of its own exploration did not change that.** It ended level with choosing at random.
+
+Every result below is a single run with one random seed, so differences of a few functions are within noise.
+
+## The third source of information
+
+This experiment tests the one source of new information my previous post left untested. ["On Computable Growth"](https://x.com/Niklas_Sikorra/status/2118303794387628252) ended with three places new information can come from: data, another model, or inference-time compute with a verifier, where the model generates, something checks, and only the checked part is trained on. That post did not test the third. This one does.
+
+Two things prompted it: ["Sparks of Weight-Space Programming"](https://rikiyat.github.io/blog/weight-space-programming/) from MIT CSAIL, where a frozen frontier model writes network weights directly, and the Terminal-RSI paper ([arXiv 2610.22192](https://arxiv.org/abs/2610.22192)) on recursive self-improvement in a terminal. My question is narrower: whether a small model can learn to write weights by itself, with a checker as its only feedback.
+
+## The task: truth table in, weights out
+
+The task is small enough to check exactly and to solve completely by brute force. The model gets a Boolean truth table and must answer with the weights of a fixed network: hidden = relu(W1·x + b1), output = 1 if W2·hidden + b2 > 0.5 else 0. Two-input tasks use 2 hidden units, three-input tasks use 3. This is XOR, one of the four worked examples in the prompt:
+
+Task: 2 inputs, 2 hidden units.\
+00 -> 0\
+01 -> 1\
+10 -> 1\
+11 -> 0\
+W1 = [[1, 1], [1, 1]]\
+b1 = [0, -1]\
+W2 = [1, -2]\
+b2 = 0
+
+The tasks are all 16 functions of two inputs and all 256 of three. An exhaustive search confirmed that every one is solvable with integer weights from -2 to 2. Of the 256, 2 are constants, 102 need one hidden unit, 150 need two, and 2 need three (parity and its negation). Four functions are the worked examples, 205 are training tasks, and 63 are held out: never trained on, and used only to test whether the skill transfers. Whole families are held out together (a function plus every version with its inputs permuted), so the held-out tasks are really new. Parity is one of them.
+
+Each round, the model makes 16 tries per training task, 3,280 answers in all. The verifier runs each written network on every input. A keep rule decides which answers become training data, and the model is fine-tuned on everything kept so far. The variants differ only in the keep rule:
+
+* **Pass-only** keeps answers that solve their own task.
+* **Hindsight** relabels. Every valid network computes some function, so each answer is labelled with the function it actually computes. A wrong answer becomes a correct example for another task. Answers that compute held-out functions are thrown away.
+* **Unverified**, the control, keeps answers without checking them.
+
+Three terms recur. "Solved on the first try" means the model's single most likely answer passes the checker. "Within 16 tries" means at least one of 16 sampled answers passes. "Temperature" controls how random the sampled answers are: higher means more varied. The default is 0.8.
+
+## 1. A checker alone is enough to learn from
+
+With the checker as its only feedback, the model went from solving no training task on the first try to solving 66 of 205, and without the check it learned nothing. The base model writes a correctly shaped network 91% of the time, but it solves nothing on the first try and only 7 of 205 training tasks within 16 tries. The unverified control ended at 0%.
+
+Pass-only never got going. It knew 7 functions in each of its 6 rounds and stayed at 3.4%, because it had almost nothing to learn from. Hindsight is what makes the loop work, since a wrong answer is still a correct network for something. The hindsight loop solved 11.7% on the first try after one round, 22.9% after 10 rounds and 32.2% after 30.
+
+[[02-results.png]]
+
+[[03-first-try.png]]
+
+## 2. Exploration sets the limit
+
+The loop can only learn from what its own guesses happen to hit, so how it explores decides how far it gets. With temperature 1.3 instead of 0.8, the hindsight loop reached 42.0% after 10 rounds (86 functions known). With 64 tries per task instead of 16, four times the sampling, it reached 40.5% (83 functions). The main loop stood at 22.9% (47 functions) after the same 10 rounds.
+
+More rounds are a poor substitute. The main loop sat at 31.7% from round 25 to round 29 and reached 32.2% at round 30. A model that has just been trained mostly repeats what it already knows, so its guesses find less and less that is new.
+
+## 3. Random guessing plus ordinary training beats every loop
+
+In this task set the model's own guesses are a worse way to explore than random numbers. The comparison uses no model guesses at all: networks get random integer weights from -2 to 2, the same verifier labels each with the function it computes, and the budget is the same 3,280 networks per round for 10 rounds. The model is then trained once on that pool. It solves 85.4% of training tasks on the first try. The best loop reached 42.0%.
+
+[[04-discovery.png]]
+
+The model also misses the harder half. 114 of the 205 training functions need two hidden units. The temperature 0.8 loop found none of them in its first 10 rounds, and one by round 30. The random pool I trained on held 176 functions, and the model trained on it solves 100% of the one-unit functions and 74.6% of the two-unit functions on the first try.
+
+Random wins because the task set is small. There are only 256 three-input functions and the weights are small integers, so random search covers most of the space quickly. The hoped-for advantage of a loop is that its guesses improve as the model learns. At this scale that advantage did not show up.
+
+## 4. Nothing generalises
+
+The model memorises answers for the functions it has seen and learns no rule that covers the ones it has not. Every loop in the table ended at 0% of the 63 held-out tasks on the first try. In a few single rounds one of the 63 was solved, and then lost again.
+
+The limit is not the loop. As a ceiling I trained the model directly on brute-force solutions for all 205 training tasks. That is a teacher, not a loop. After 150 passes over those solutions it solves 100% of training tasks and 7.9% of held-out tasks, or 8 of 63 (12.7%) within 16 tries. The random-weights model reaches 1.6%, and 4.8% within 16 tries. Even with a correct answer for every training task, the skill barely transfers to a new truth table.
+
+## 5. It is not recursive self-improvement
+
+The loop fails all three tests I would apply for recursive self-improvement, which in the strong sense means a system that gets better at making itself better, so that each gain speeds up the next.
+
+* **Self-application.** The system does not improve the process that improves it. The loop (how to explore, what to keep, how to train) is fixed code. The model only gets better at the task.
+* **Compounding.** Gains do not feed further gains. The temperature 0.8 loop gained 11.7 points in round 1 and about 0.5 points per round at the end.
+* **Open-ended measure.** The target cannot keep growing. There are 205 fixed training tasks. Once they are solved, there is nothing left to gain.
+
+[[05-not-rsi.png]]
+
+A real version would need the model to take over part of its own learning process, and for that to pay off. The last experiment tests the smallest such step.
+
+## 6. Giving the model control of its own exploration did not help
+
+I handed the model one part of its own learning process, how much to explore, and it ended level with choosing at random and with a fixed setting. Before each answer the model now writes one extra line, T = v, picking its sampling temperature from 0.5, 0.8, 1.1, 1.4 or 1.7. A quarter of the time a random value is forced, so that every value keeps being tried. A temperature that produced something new for the pool, a "progress event", becomes a training example for the T line. Everything else is the hindsight loop. The extra line changes the prompt, so these three runs of 10 rounds compare with each other, not with the loops above:
+
+[[06-self-chosen.png]]
+
+Choosing did not beat chance. With one run each, a gap of three functions (89 against 92) is within noise, so this is a tie at best. The fixed 1.4 run has the best first-try result of the three.
+
+The model did learn something real. Its mean chosen temperature stayed near 0.8 for rounds 0 to 3, then rose to 1.38 by round 10, with 1.7 its most frequent pick. That agrees with section 2: hotter sampling explores better. But it learned one global setting, not a per-task one. In round 10 it chose 1.383 on tasks it had solved before and 1.378 on tasks it had never solved.
+
+The scoring rule also worked against it. A progress event counted any new answer, including a new way to write a known function, and it counted events, not events per try. So cool temperatures collected most of the early credit: in round 0, 286 of 347 events came from 0.5 and 0.8. Per try, in the random-choice run, 1.1 and 1.4 found the most new functions (3.8 and 3.6 per 1,000 tries) and 0.5 the fewest (1.4). A fairer rule would count only new functions, per try. I did not run it.
+
+[[07-temperature.png]]
+
+## What I take from it
+
+* Compute with a verifier is a real source of information, but it was not the cheapest one here. At the same budget of checked networks, random numbers through the same verifier gave 85.4%, and the model's own guesses gave 42.0%.
+* The experiment I would run next is four-input functions, 65,536 tasks. I expect random guessing to cover far less of that space, and generalisation to have room to appear. That is an expectation, not a result.
+
+## Related work
+
+The closest work I found is NeuroGen (arXiv 2505.12470) and IGPG (arXiv 2504.02012), which train on gradient-descent checkpoints, and ShortCircuit (arXiv 2408.09858), which does reinforcement-learning circuit synthesis from truth tables, with gates, not weights. I looked for published work where a model learns to write weights from a verifier-driven loop. I found none in a search, which was not exhaustive.
+
+## Method in brief
+
+* **Training.** Qwen2.5-0.5B. Each round trains a small adapter on the accumulated pool, starting again from the base model. The newly trained model makes the next round's tries.
+* **Runs.** Pass-only for 6 rounds, hindsight for 30 and unverified for 3, at temperature 0.8 with 16 tries per task. Hindsight variants of 10 rounds each: temperature 1.3, 64 tries per task, and the three T = v runs. Teacher runs with 10, 40 and 150 passes over the brute-force solutions (4.9%, 100% and 100% of training tasks on the first try). One training run on verified random-weight networks.
+* **Hardware and cost.** A first attempt on an Apple M1 laptop under an 8 GB memory limit was too slow, about 10 seconds per training step, and crashed repeatedly. Everything reported ran on one rented RTX 4000 Ada at $0.28 per hour: 2.8 training steps per second, about 120 answers per second, 10.7 hours, about $3.00 in total.
+
+## Caveats
+
+* Every result is a single run with one random seed. Differences of a few functions are within noise.
+* The task set is tiny. That random guessing wins is a statement about these 272 functions and integer weights from -2 to 2, not about learning from a verifier in general.
+* The discovery counts for random weights are the mean of 20 simulated runs. The 85.4% comes from one actual pool and one training run.
+* The self-chosen run ended at 1.6% of held-out tasks on the first try, not 0%.
+* The scoring rule for the temperature choice was flawed as described in section 6, and the fairer rule was not run.

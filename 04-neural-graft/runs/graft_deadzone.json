@@ -1,0 +1,60 @@
+{
+  "config": {
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "tasks": "all_0,bigram_1_2,sorted_asc,dyck1",
+    "arms": "compiled_graft_deadzone",
+    "graft_steps": 800,
+    "lora_steps": 300,
+    "batch_size": 32,
+    "seed": 42,
+    "out": "/content/graft04/runs/graft_deadzone.json"
+  },
+  "base_english_nll": 2.805,
+  "elapsed_s": 58.3,
+  "results": {
+    "all_0": {
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "bigram_1_2": {
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "sorted_asc": {
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "dyck1": {
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    }
+  }
+}

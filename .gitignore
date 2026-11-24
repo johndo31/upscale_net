@@ -1,7 +1,12 @@
 .venv/
+__pycache__/
+*.pyc
+*.log
+*.pt
+*.safetensors
+bundle.sh
 models/
 runs/
-__pycache__/
-*.log
-bundle.sh
 runs-pod/
+runs_gpu/
+runs_smoke*/

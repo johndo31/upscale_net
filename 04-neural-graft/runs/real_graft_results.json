@@ -1,0 +1,150 @@
+{
+  "config": {
+    "verify_only": false,
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "tasks": "decimal_sorted_64",
+    "arms": "all",
+    "graft_steps": 800,
+    "lora_steps": 350,
+    "batch_size": 32,
+    "seed": 42,
+    "out": "/content/graft04/runs/real_graft_results.json"
+  },
+  "base_english_nll": 2.805,
+  "elapsed_s": 624.1,
+  "results": {
+    "add_carry_64": {
+      "base": {
+        "id": 0.08333333333333333,
+        "L16": 0.1015625,
+        "L32": 0.0703125,
+        "L64": 0.1015625,
+        "cascade_L64": 0.1015625,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 0.9833333333333333,
+        "L16": 0.984375,
+        "L32": 0.9765625,
+        "L64": 0.984375,
+        "cascade_L64": 0.484375,
+        "english_nll_final": 2.7849,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 0.9833333333333333,
+        "L16": 0.9765625,
+        "L32": 0.9765625,
+        "L64": 0.96875,
+        "cascade_L64": 0.53125,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8059,
+        "n_trainable_params": 32787,
+        "organ_nnz": 17427
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "cascade_L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 15360,
+        "organ_nnz": 1017,
+        "full_sum_eval": {
+          "full_sum_L16": {
+            "exact_all_digits": 1.0,
+            "per_digit": 1.0
+          },
+          "full_sum_L64": {
+            "exact_all_digits": 1.0,
+            "per_digit": 1.0
+          },
+          "full_sum_cascade64": {
+            "exact_all_digits": 1.0,
+            "per_digit": 1.0
+          }
+        }
+      }
+    },
+    "real_parens_128": {
+      "base": {
+        "id": 0.4666666666666667,
+        "L16": 0.5234375,
+        "L32": 0.515625,
+        "L64": 0.53125,
+        "L128": 0.5390625,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 0.8046875,
+        "L32": 0.4765625,
+        "L64": 0.46875,
+        "L128": 0.4765625,
+        "english_nll_final": 2.95,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 0.48333333333333334,
+        "L16": 0.3671875,
+        "L32": 0.5625,
+        "L64": 0.5625,
+        "L128": 0.5625,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 4148,
+        "organ_nnz": 1076
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "L128": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 3072,
+        "organ_nnz": 15
+      }
+    },
+    "decimal_sorted_64": {
+      "base": {
+        "id": 0.475,
+        "L16": 0.4375,
+        "L32": 0.546875,
+        "L64": 0.53125,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_final": 2.831,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 0.7166666666666667,
+        "L16": 0.6484375,
+        "L32": 0.6953125,
+        "L64": 0.5078125,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8054,
+        "n_trainable_params": 3884,
+        "organ_nnz": 812
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8048,
+        "n_trainable_params": 3072,
+        "organ_nnz": 42
+      }
+    }
+  }
+}

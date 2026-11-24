@@ -1,0 +1,227 @@
+{
+  "config": {
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "tasks": "all_0,bigram_1_2,sorted_asc,dyck1",
+    "graft_steps": 800,
+    "lora_steps": 300,
+    "batch_size": 32,
+    "seed": 42,
+    "out": "/content/graft04/runs/graft_results.json"
+  },
+  "base_english_nll": 2.805,
+  "elapsed_s": 2224.0,
+  "results": {
+    "all_0": {
+      "base": {
+        "id": 0.4666666666666667,
+        "L16": 0.453125,
+        "L32": 0.5546875,
+        "L64": 0.53125,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 0.9453125,
+        "L64": 0.984375,
+        "english_nll_final": 2.8446,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 0.8515625,
+        "L64": 0.671875,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.9034,
+        "n_trainable_params": 7768
+      },
+      "compiled_graft_blind": {
+        "id": 0.4666666666666667,
+        "L16": 0.453125,
+        "L32": 0.5546875,
+        "L64": 0.53125,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 30736
+      },
+      "compiled_graft_calibrated": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8584,
+        "n_trainable_params": 6144
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "bigram_1_2": {
+      "base": {
+        "id": 0.49166666666666664,
+        "L16": 0.5625,
+        "L32": 0.46875,
+        "L64": 0.484375,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_final": 2.9777,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 0.984375,
+        "L64": 0.8515625,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8353,
+        "n_trainable_params": 7768
+      },
+      "compiled_graft_blind": {
+        "id": 0.49166666666666664,
+        "L16": 0.5625,
+        "L32": 0.46875,
+        "L64": 0.484375,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 30736
+      },
+      "compiled_graft_calibrated": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8045,
+        "n_trainable_params": 6144
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "sorted_asc": {
+      "base": {
+        "id": 0.35833333333333334,
+        "L16": 0.4765625,
+        "L32": 0.46875,
+        "L64": 0.515625,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 0.84375,
+        "L64": 0.4921875,
+        "english_nll_final": 2.8201,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 0.8125,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8168,
+        "n_trainable_params": 7768
+      },
+      "compiled_graft_blind": {
+        "id": 0.35833333333333334,
+        "L16": 0.515625,
+        "L32": 0.5234375,
+        "L64": 0.4921875,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 3.8025,
+        "n_trainable_params": 30736
+      },
+      "compiled_graft_calibrated": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8177,
+        "n_trainable_params": 6144
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    },
+    "dyck1": {
+      "base": {
+        "id": 0.13333333333333333,
+        "L16": 0.15625,
+        "L32": 0.125,
+        "L64": 0.1796875,
+        "english_nll_final": 2.805
+      },
+      "lora": {
+        "id": 1.0,
+        "L16": 0.8359375,
+        "L32": 0.609375,
+        "L64": 0.5703125,
+        "english_nll_final": 2.8297,
+        "n_trainable_params": 18464768
+      },
+      "sgd_graft": {
+        "id": 1.0,
+        "L16": 0.9375,
+        "L32": 0.90625,
+        "L64": 0.84375,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8255,
+        "n_trainable_params": 7768
+      },
+      "compiled_graft_blind": {
+        "id": 0.13333333333333333,
+        "L16": 0.15625,
+        "L32": 0.125,
+        "L64": 0.1796875,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 3.8271,
+        "n_trainable_params": 30736
+      },
+      "compiled_graft_calibrated": {
+        "id": 0.13333333333333333,
+        "L16": 0.15625,
+        "L32": 0.125,
+        "L64": 0.2109375,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.8413,
+        "n_trainable_params": 6144
+      },
+      "compiled_graft_deadzone": {
+        "id": 1.0,
+        "L16": 1.0,
+        "L32": 1.0,
+        "L64": 1.0,
+        "english_nll_step0": 2.805,
+        "english_nll_final": 2.805,
+        "n_trainable_params": 6144
+      }
+    }
+  }
+}

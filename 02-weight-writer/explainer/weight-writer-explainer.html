@@ -1,0 +1,1274 @@
+<title>Weight Writer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one reading column of lab notes; figures, the verifier and the chart sit in bordered "instrument" panels. */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --sunken: #eceef2;
+  --ink: #15181e;
+  --ink-2: #464c58;
+  --muted: #6a7080;
+  --rule: #d9dde4;
+  --accent: #2851b8;
+  --accent-soft: #dbe4f8;
+  --pass: #11713f;
+  --pass-bg: #e2f2e8;
+  --fail: #b8322b;
+  --fail-bg: #f9e3e1;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --bar: #8ea6d6;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-3: 2.25rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111318;
+    --surface: #191c23;
+    --sunken: #20242c;
+    --ink: #e8eaef;
+    --ink-2: #b6bbc6;
+    --muted: #8b91a0;
+    --rule: #2d323c;
+    --accent: #8aa8ff;
+    --accent-soft: #24304d;
+    --pass: #4cc983;
+    --pass-bg: #163325;
+    --fail: #ff8077;
+    --fail-bg: #3a1e1c;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --bar: #4f6aa6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111318;
+  --surface: #191c23;
+  --sunken: #20242c;
+  --ink: #e8eaef;
+  --ink-2: #b6bbc6;
+  --muted: #8b91a0;
+  --rule: #2d323c;
+  --accent: #8aa8ff;
+  --accent-soft: #24304d;
+  --pass: #4cc983;
+  --pass-bg: #163325;
+  --fail: #ff8077;
+  --fail-bg: #3a1e1c;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --bar: #4f6aa6;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 56px;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 780px; margin: 0 auto; display: grid; gap: 56px; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-2); font-weight: 600; letter-spacing: -0.005em; }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; max-width: 66ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.muted { color: var(--muted); }
+.small { font-size: var(--step--1); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+header .lede { font-size: var(--step-1); color: var(--ink-2); max-width: 36ch; line-height: 1.4; }
+.status {
+  display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 6px 12px; justify-self: start;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pass); flex: none; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: var(--step--1); }
+nav.toc a { color: var(--ink-2); text-decoration: none; font-family: var(--font-mono); }
+nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+/* sections */
+section { display: grid; gap: 18px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head .label { color: var(--accent); }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 18px;
+  min-width: 0;
+}
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+figcaption { font-size: var(--step--1); color: var(--muted); max-width: 66ch; }
+.svg-wrap { overflow-x: auto; }
+svg { display: block; max-width: 100%; height: auto; }
+.loop-svg { width: 100%; max-width: 540px; margin: 0 auto; }
+
+/* three sources */
+.sources { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.source { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; background: var(--surface); display: grid; gap: 2px; align-content: start; }
+.source b { font-weight: 600; }
+.source span { font-size: var(--step--1); color: var(--muted); }
+.source.on { border-color: var(--accent); background: var(--accent-soft); }
+.source.on span { color: var(--ink-2); }
+
+/* formula + prompt */
+.formula {
+  font-family: var(--font-mono); font-size: 0.95rem; background: var(--sunken);
+  border-radius: 6px; padding: 12px 14px; overflow-x: auto; white-space: pre; line-height: 1.7;
+}
+.task-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+pre.prompt {
+  margin: 0; font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.65;
+  background: var(--sunken); border-radius: 6px; padding: 12px 14px; overflow-x: auto;
+}
+pre.prompt .p { color: var(--ink-2); }
+pre.prompt .a { color: var(--ink); font-weight: 600; }
+pre.prompt .tag { display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+pre.prompt .tag + .a, pre.prompt .tag + .p { display: inline; }
+pre.prompt hr { border: 0; border-top: 1px dashed var(--rule); margin: 8px 0; }
+
+/* svg diagram classes */
+.d-node { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.d-node.in { fill: var(--sunken); }
+.d-edge { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+.d-edge.neg { stroke-dasharray: 5 4; }
+.d-arrow { fill: var(--ink-2); }
+.d-text { fill: var(--ink); font-family: var(--font-mono); font-size: 15px; }
+.d-w { fill: var(--ink); font-family: var(--font-mono); font-size: 14px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; }
+.d-note { fill: var(--muted); font-family: var(--font-mono); font-size: 12.5px; }
+.d-head { fill: var(--muted); font-family: var(--font-body); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.d-box { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.d-box.key { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
+.d-title { fill: var(--ink); font-family: var(--font-body); font-size: 16px; font-weight: 600; }
+.d-sub { fill: var(--ink-2); font-family: var(--font-body); font-size: 13px; }
+.d-lab { fill: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+/* verifier */
+.verifier { display: grid; gap: 16px; }
+.v-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.v-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.weights { display: grid; gap: 10px; font-family: var(--font-mono); font-size: 0.95rem; }
+.wline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.wline .nm { min-width: 2.6em; font-weight: 600; }
+.weights input {
+  width: 3.4em; font-family: var(--font-mono); font-size: 0.95rem; text-align: center;
+  padding: 4px 2px; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--sunken); color: var(--ink); font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.weights input::-webkit-outer-spin-button, .weights input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.weights input.changed { border-color: var(--accent); background: var(--accent-soft); }
+.v-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+button {
+  font-family: var(--font-body); font-size: var(--step--1); font-weight: 500;
+  padding: 6px 14px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+}
+button:hover { border-color: var(--ink-2); }
+button.warn { border-color: var(--fail); color: var(--fail); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.tt td { font-family: var(--font-mono); }
+.tt td.c { text-align: center; }
+.tt th.c { text-align: center; }
+.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600; padding: 1px 8px; border-radius: 10px; }
+.chk.ok { color: var(--pass); background: var(--pass-bg); }
+.chk.bad { color: var(--fail); background: var(--fail-bg); }
+.verdict {
+  display: grid; gap: 4px; border-radius: 6px; padding: 12px 14px;
+  border: 1px solid var(--rule); background: var(--sunken);
+}
+.verdict .big { font-weight: 600; font-size: 1.05rem; }
+.verdict.ok .big { color: var(--pass); }
+.verdict.bad .big { color: var(--fail); }
+.verdict .relabel { color: var(--ink); }
+
+/* difficulty bars */
+.bars { display: grid; gap: 8px; }
+.brow { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3em; gap: 10px; align-items: center; font-size: var(--step--1); }
+.brow .track { height: 14px; background: var(--sunken); border-radius: 3px; overflow: hidden; }
+.brow .fill { height: 100%; background: var(--bar); border-radius: 0 3px 3px 0; min-width: 2px; }
+.brow .n { font-family: var(--font-mono); text-align: right; }
+.brow .note { grid-column: 2 / 4; color: var(--muted); margin-top: -6px; font-size: 0.75rem; }
+.split { display: flex; height: 26px; border-radius: 4px; overflow: hidden; gap: 2px; }
+.split div { display: flex; align-items: center; padding: 0 8px; font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap; overflow: hidden; }
+.split .s-ex { background: var(--rule); color: var(--ink); flex: 4 0 26px; padding: 0; justify-content: center; }
+.split .s-tr { background: var(--bar); color: var(--ink); flex: 205; }
+.split .s-ho { background: var(--accent); color: var(--surface); flex: 63; }
+.split-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--step--1); color: var(--ink-2); }
+.split-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* strategies */
+.strats { display: grid; gap: 0; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.strat { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 4px 16px; padding: 14px 16px; border-top: 1px solid var(--rule); }
+.strat:first-child { border-top: 0; }
+.strat .nm { font-weight: 600; }
+.strat .nm small { display: block; font-weight: 400; font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { font-family: var(--font-mono); font-size: 0.72rem; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--rule); color: var(--ink-2); }
+
+/* chart */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: var(--step--1); color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { width: 18px; height: 2px; border-radius: 1px; display: inline-block; }
+.chart-wrap { position: relative; min-width: 0; }
+.c-grid { stroke: var(--rule); stroke-width: 1; }
+.c-axis { fill: var(--muted); font-family: var(--font-mono); font-size: 11.5px; }
+.c-end { fill: var(--ink); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+.c-end2 { fill: var(--muted); font-family: var(--font-mono); font-size: 11.5px; }
+.c-cross { stroke: var(--muted); stroke-width: 1; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  white-space: nowrap; display: grid; gap: 2px;
+}
+.tip b { font-family: var(--font-mono); font-weight: 600; }
+.tip .r { display: flex; align-items: center; gap: 6px; }
+.tip .r i { width: 10px; height: 2px; display: inline-block; }
+
+.results td.v { font-family: var(--font-mono); white-space: nowrap; }
+.results .cell { display: flex; align-items: center; gap: 8px; }
+.results .cell .t { width: 64px; height: 8px; background: var(--sunken); border-radius: 2px; overflow: hidden; flex: none; }
+.results .cell .t div { height: 100%; background: var(--bar); }
+.results .cell .x { min-width: 3.2em; text-align: right; }
+.results tr.grp td { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding-top: 14px; border-bottom: 0; }
+.table-wrap { overflow-x: auto; }
+
+/* findings */
+.findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.findings li { display: grid; grid-template-columns: 2em minmax(0, 1fr); gap: 0 10px; }
+.findings li::before { content: counter(f); counter-increment: f; font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.findings { counter-reset: f; }
+.findings b { font-weight: 600; }
+.caveat { border-left: 3px solid var(--muted); padding: 2px 0 2px 12px; color: var(--ink-2); font-size: var(--step--1); }
+
+/* queue */
+.queue { list-style: none; margin: 0; padding: 0; display: grid; }
+.queue li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.queue li:first-child { border-top: 1px solid var(--rule); }
+.queue .i { font-family: var(--font-mono); color: var(--muted); }
+.queue .m { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); text-align: right; }
+.queue .grp { display: block; grid-column: 1 / -1; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 14px 0 0; border: 0; }
+.queue li.grp { border-bottom: 0; padding-bottom: 0; }
+.queue li.grp:first-child { border-top: 0; padding-top: 0; }
+.queue li.grp + li { border-top: 1px solid var(--rule); }
+.decision { background: var(--accent-soft); border-radius: 6px; padding: 12px 14px; }
+
+/* hardware */
+.hw { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.hw .panel { display: grid; gap: 8px; align-content: start; }
+.hw dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: var(--step--1); }
+.hw dt { color: var(--muted); }
+.hw dd { margin: 0; font-family: var(--font-mono); }
+
+footer { border-top: 1px solid var(--rule); padding-top: 18px; font-size: var(--step--1); color: var(--muted); }
+
+@media (max-width: 640px) {
+  body { padding-block: 24px 40px; }
+  .page { gap: 44px; }
+  h1 { font-size: 1.9rem; }
+  .task-grid, .v-grid, .hw { grid-template-columns: minmax(0, 1fr); }
+  .sources { grid-template-columns: minmax(0, 1fr); }
+  .strat { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: 14px; }
+  .results .cell .t { display: none; }
+  .results th, .results td { padding: 6px 5px; }
+  .panel.svg-wrap { padding: 8px; }
+  .d-text { font-size: 17px; }
+  .d-w { font-size: 16px; }
+  .d-note { font-size: 14px; }
+  .d-head { font-size: 13px; }
+  .d-title { font-size: 18px; }
+  .d-sub { font-size: 14.5px; }
+  .d-lab { font-size: 13px; }
+}
+
+/* short answer */
+.short-answer { display: grid; gap: 10px; }
+.short { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.short li { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; max-width: 66ch; }
+.short li::before { content: ""; width: 6px; height: 6px; margin-top: 0.62em; border-radius: 1px; background: var(--accent); justify-self: center; }
+.short b, .tests b { font-weight: 600; }
+.strat-note { font-size: var(--step--1); color: var(--ink-2); }
+
+/* charts: shared parts */
+.chart svg { width: 100%; }
+.legend i.dash { background: none !important; height: 0; border-top: 2px dashed var(--c); }
+.c-ref { stroke: var(--muted); stroke-width: 1.25; stroke-dasharray: 5 4; fill: none; }
+.c-ref-lab { fill: var(--ink-2); font-family: var(--font-body); font-size: 12px; }
+.c-hov { stroke: var(--surface); stroke-width: 2; }
+
+/* three tests */
+.tests { display: grid; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.test { display: grid; grid-template-columns: 11em minmax(0, 1fr) auto; grid-template-areas: "nm ex vd"; gap: 6px 16px; padding: 14px 16px; border-top: 1px solid var(--rule); align-items: start; }
+.test:first-child { border-top: 0; }
+.test .nm { grid-area: nm; font-weight: 600; }
+.test .nm small { display: block; font-weight: 400; font-size: var(--step--1); color: var(--muted); line-height: 1.4; margin-top: 2px; }
+.test .ex { grid-area: ex; }
+.test .vd { grid-area: vd; }
+.no { display: inline-block; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; padding: 1px 10px; border-radius: 10px; border: 1px solid var(--ink-2); color: var(--ink); white-space: nowrap; }
+
+/* live run status */
+.run-st { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; }
+.run-st.running { color: var(--pass); background: var(--pass-bg); border-color: transparent; }
+.run-st.done { color: var(--ink); }
+.runs td { font-family: var(--font-mono); white-space: nowrap; }
+.runs td:first-child { font-family: var(--font-body); }
+
+@media (max-width: 640px) {
+  .test { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nm vd" "ex ex"; }
+  .runs th, .runs td { padding: 6px 5px; }
+}
+</style>
+
+<div class="page">
+
+<header>
+  <h1>Weight Writer</h1>
+  <p class="lede">Can a small language model teach itself to write the weights of a neural network?</p>
+  <div class="status"><span class="dot" aria-hidden="true"></span><span>Status: <span data-fact="status">self-chosen exploration runs in progress</span>. Numbers as of <span data-fact="asOf">11 November 2026, 15:35 CET</span>.</span></div>
+  <div class="panel short-answer">
+    <span class="label">The short answer</span>
+    <ul class="short">
+      <li><span><b>Yes, from a checker alone, up to a point.</b> The share of training tasks solved on the first try (the model's single most likely answer passes the check) rose from 0% to <span data-fact="t08FinalR">32%</span> in <span data-fact="t08FinalRound">30</span> rounds, and to <span data-fact="t13r10R">42%</span> in 10 rounds with hotter sampling. Without the check, it ended at <span data-fact="unverifiedFinal">0%</span>.</span></li>
+      <li><span><b>Exploration decides how far the loop gets.</b> Sampling more randomly, or simply trying more often, nearly doubled the result at round 10.</span></li>
+      <li><span><b>Blind guessing plus ordinary training does better.</b> A model trained once on randomly generated, checked networks solves <span data-fact="randomPoolTrain">85.4%</span>. This task set is small enough for random search.</span></li>
+      <li><span><b>The model memorises, and this is not recursive self-improvement.</b> Unseen tasks stay near 0%, and the gains shrink as the rounds go on.</span></li>
+    </ul>
+  </div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#question">Question</a><a href="#task">Task</a><a href="#taskset">Task set</a><a href="#loop">Loop</a><a href="#results">Results</a><a href="#ordinary">Ordinary learning</a><a href="#rsi">Recursion</a><a href="#selfexplore">Own exploration</a><a href="#meaning">Meaning</a><a href="#next">Next</a><a href="#hardware">Hardware</a>
+  </nav>
+</header>
+
+<section id="question">
+  <div class="sec-head"><span class="label">1 · The question</span><h2>Learning a skill from a checker alone</h2></div>
+  <p>Language models normally learn from data. A recent MIT CSAIL post, <a href="https://rikiyat.github.io/blog/weight-space-programming/" target="_blank" rel="noopener">Sparks of Weight-Space Programming</a>, showed that a frontier model can write the weights of a neural network directly, as numbers, without training it.</p>
+  <p>We ask a narrower question. Can a small model, Qwen2.5-0.5B (half a billion parameters), learn that skill by itself, when the only feedback is a checker that runs what it wrote? There is no teacher model, and there are no solved examples beyond the four in the prompt.</p>
+  <div class="panel" style="display:grid;gap:12px">
+    <span class="label">Why it matters to us</span>
+    <p>The first experiment, On Computable Growth, ended with three places new information can come from. This experiment tests the third one, which was not run then.</p>
+    <div class="sources">
+      <div class="source"><b>Data</b><span>Learn from more examples</span></div>
+      <div class="source"><b>Another model</b><span>Learn from a teacher</span></div>
+      <div class="source on"><b>Compute + verifier</b><span>Try, check, learn from what passed. This experiment.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="task">
+  <div class="sec-head"><span class="label">2 · The task</span><h2>Truth table in, weights out</h2></div>
+  <p>The model gets a truth table and must answer with the weights of a fixed tiny network. Two-input tasks use 2 hidden units. Three-input tasks use 3.</p>
+  <div class="formula">hidden = relu(W1 · x + b1)
+output = 1 if W2 · hidden + b2 &gt; 0.5 else 0</div>
+
+  <div class="task-grid">
+    <figure>
+      <pre class="prompt"><span class="tag">Prompt</span><span class="p">Task: 2 inputs, 2 hidden units.
+00 -&gt; 0
+01 -&gt; 1
+10 -&gt; 1
+11 -&gt; 0</span>
+<hr><span class="tag">Model's answer</span><span class="a">W1 = [[1, 1], [1, 1]]
+b1 = [0, -1]
+W2 = [1, -2]
+b2 = 0</span></pre>
+      <figcaption>The real prompt format and a real answer, for XOR.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="panel svg-wrap">
+        <svg viewBox="0 0 460 280" role="img" aria-label="The XOR network: inputs x1 and x2 each connect to both hidden ReLU units with weight 1. Hidden unit 1 has bias 0, hidden unit 2 has bias minus 1. The output sums hidden 1 times 1 and hidden 2 times minus 2, plus bias 0, and outputs 1 if the sum is above 0.5.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" class="d-arrow"/>
+            </marker>
+          </defs>
+          <line class="d-edge" x1="72" y1="80" x2="197" y2="80" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="72" y1="180" x2="197" y2="180" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="69.2" y1="90.7" x2="201.2" y2="164" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="69.2" y1="169.3" x2="201.2" y2="96" marker-end="url(#ah)"/>
+          <line class="d-edge" x1="258.8" y1="88.5" x2="368.3" y2="120.7" marker-end="url(#ah)"/>
+          <line class="d-edge neg" x1="258.8" y1="171.5" x2="368.3" y2="139.3" marker-end="url(#ah)"/>
+
+          <text class="d-w" x="130" y="72" text-anchor="middle">1</text>
+          <text class="d-w" x="130" y="198" text-anchor="middle">1</text>
+          <text class="d-w" x="104" y="115" text-anchor="middle">1</text>
+          <text class="d-w" x="104" y="155" text-anchor="middle">1</text>
+          <text class="d-w" x="315" y="94" text-anchor="middle">1</text>
+          <text class="d-w" x="315" y="178" text-anchor="middle">−2</text>
+
+          <circle class="d-node in" cx="50" cy="80" r="22"/>
+          <circle class="d-node in" cx="50" cy="180" r="22"/>
+          <circle class="d-node" cx="230" cy="80" r="30"/>
+          <circle class="d-node" cx="230" cy="180" r="30"/>
+          <circle class="d-node" cx="400" cy="130" r="30"/>
+          <text class="d-text" x="50" y="85" text-anchor="middle">x1</text>
+          <text class="d-text" x="50" y="185" text-anchor="middle">x2</text>
+          <text class="d-text" x="230" y="85" text-anchor="middle">h1</text>
+          <text class="d-text" x="230" y="185" text-anchor="middle">h2</text>
+          <text class="d-text" x="400" y="135" text-anchor="middle">out</text>
+
+          <text class="d-note" x="230" y="38" text-anchor="middle">bias 0</text>
+          <text class="d-note" x="230" y="230" text-anchor="middle">bias −1</text>
+          <text class="d-note" x="400" y="88" text-anchor="middle">bias 0</text>
+          <text class="d-note" x="400" y="182" text-anchor="middle">&gt; 0.5 → 1</text>
+
+          <text class="d-head" x="50" y="268" text-anchor="middle">inputs</text>
+          <text class="d-head" x="230" y="268" text-anchor="middle">hidden, ReLU</text>
+          <text class="d-head" x="400" y="268" text-anchor="middle">output</text>
+        </svg>
+      </div>
+      <figcaption>The same answer drawn as a network. On input 11, h1 = 2 and h2 = 1, so the output sum is 2 − 2 = 0 and the network says 0. The dashed edge is the negative weight.</figcaption>
+    </figure>
+  </div>
+
+  <div class="panel verifier" id="verifier">
+    <div class="v-top">
+      <h3>Try the verifier</h3>
+      <span class="label">Target: XOR</span>
+    </div>
+    <p class="small muted">This is what the checker does. It runs the network on all four inputs and compares each output with the truth table. Edit any weight.</p>
+    <div class="v-grid">
+      <div class="weights" aria-label="Network weights">
+        <div class="wline"><span class="nm">W1 =</span>[[<input id="w1_00" type="number" step="1" aria-label="W1 row 1 column 1">,<input id="w1_01" type="number" step="1" aria-label="W1 row 1 column 2">],</div>
+        <div class="wline"><span class="nm"></span>&nbsp;[<input id="w1_10" type="number" step="1" aria-label="W1 row 2 column 1">,<input id="w1_11" type="number" step="1" aria-label="W1 row 2 column 2">]]</div>
+        <div class="wline"><span class="nm">b1 =</span>[<input id="b1_0" type="number" step="1" aria-label="b1 first">,<input id="b1_1" type="number" step="1" aria-label="b1 second">]</div>
+        <div class="wline"><span class="nm">W2 =</span>[<input id="w2_0" type="number" step="1" aria-label="W2 first">,<input id="w2_1" type="number" step="1" aria-label="W2 second">]</div>
+        <div class="wline"><span class="nm">b2 =</span>&nbsp;<input id="b2" type="number" step="1" aria-label="b2"></div>
+        <div class="v-btns">
+          <button type="button" id="btn-reset">Reset</button>
+          <button type="button" id="btn-break" class="warn">Break it</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="tt">
+          <thead><tr><th>Input</th><th class="c">XOR</th><th class="c">Network</th><th>Check</th></tr></thead>
+          <tbody id="tt-body">
+            <tr><td>00</td><td class="c">0</td><td class="c">0</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>01</td><td class="c">1</td><td class="c">1</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>10</td><td class="c">1</td><td class="c">1</td><td><span class="chk ok">✓ pass</span></td></tr>
+            <tr><td>11</td><td class="c">0</td><td class="c">0</td><td><span class="chk ok">✓ pass</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="verdict ok" id="verdict" aria-live="polite">
+      <span class="big" id="v-main">Passes: all 4 rows match XOR.</span>
+      <span class="mono small">Network computes: <b id="v-bits">0110</b> <span id="v-name" class="muted">(XOR)</span></span>
+      <span class="relabel small" id="v-relabel" hidden></span>
+    </div>
+    <p class="small muted">A wrong answer still computes some function. Press "Break it" to see one. This is the idea behind the hindsight strategy in section 4.</p>
+  </div>
+</section>
+
+<section id="taskset">
+  <div class="sec-head"><span class="label">3 · The task set</span><h2>Every Boolean function of two and three inputs</h2></div>
+  <p>The tasks are all Boolean functions of two inputs (16) and of three inputs (256). An exhaustive search confirmed that every one is solvable with small integer weights between −2 and 2.</p>
+  <figure class="panel">
+    <span class="label">Hidden units needed, 256 three-input functions</span>
+    <div class="bars">
+      <div class="brow"><span>0 units</span><div class="track"><div class="fill" style="width:1.33%"></div></div><span class="n">2</span><span class="note">the two constants</span></div>
+      <div class="brow"><span>1 unit</span><div class="track"><div class="fill" style="width:68%"></div></div><span class="n">102</span></div>
+      <div class="brow"><span>2 units</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">150</span></div>
+      <div class="brow"><span>3 units</span><div class="track"><div class="fill" style="width:1.33%"></div></div><span class="n">2</span><span class="note">parity and its negation</span></div>
+    </div>
+  </figure>
+  <figure class="panel">
+    <span class="label">How the 272 functions are used</span>
+    <div class="split" role="img" aria-label="4 prompt examples, 205 training tasks, 63 held-out tasks">
+      <div class="s-ex" title="4 worked examples">4</div>
+      <div class="s-tr">205</div>
+      <div class="s-ho">63</div>
+    </div>
+    <div class="split-key">
+      <span><i style="background:var(--rule)"></i>4 worked examples in the prompt</span>
+      <span><i style="background:var(--bar)"></i>205 training tasks</span>
+      <span><i style="background:var(--accent)"></i>63 held-out tasks</span>
+    </div>
+  </figure>
+  <p>Whole families of functions are held out together. A family is a function plus all its versions with the inputs permuted. That way the held-out tasks are really new. Parity is held out.</p>
+</section>
+
+<section id="loop">
+  <div class="sec-head"><span class="label">4 · The loop</span><h2>Attempt, verify, keep, train, repeat</h2></div>
+  <figure>
+    <div class="panel svg-wrap">
+      <svg class="loop-svg" viewBox="0 0 460 274" role="img" aria-label="One round of the loop: Attempt, 16 tries per task, sends written networks to Verify, which runs each network on every input. Verdicts go to Keep, which chooses what becomes training data. Kept answers go to Train, which fine-tunes the model. The new model goes back to Attempt.">
+        <defs>
+          <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="d-arrow"/>
+          </marker>
+        </defs>
+        <rect class="d-box" x="10" y="10" width="170" height="84" rx="6"/>
+        <rect class="d-box" x="280" y="10" width="170" height="84" rx="6"/>
+        <rect class="d-box key" x="280" y="180" width="170" height="84" rx="6"/>
+        <rect class="d-box" x="10" y="180" width="170" height="84" rx="6"/>
+
+        <text class="d-title" x="95" y="42" text-anchor="middle">Attempt</text>
+        <text class="d-sub" x="95" y="64" text-anchor="middle">16 tries per task</text>
+        <text class="d-title" x="365" y="42" text-anchor="middle">Verify</text>
+        <text class="d-sub" x="365" y="64" text-anchor="middle">run each network</text>
+        <text class="d-sub" x="365" y="81" text-anchor="middle">on every input</text>
+        <text class="d-title" x="365" y="212" text-anchor="middle">Keep</text>
+        <text class="d-sub" x="365" y="234" text-anchor="middle">choose what becomes</text>
+        <text class="d-sub" x="365" y="251" text-anchor="middle">training data</text>
+        <text class="d-title" x="95" y="212" text-anchor="middle">Train</text>
+        <text class="d-sub" x="95" y="234" text-anchor="middle">fine-tune the model</text>
+        <text class="d-sub" x="95" y="251" text-anchor="middle">on what was kept</text>
+
+        <line class="d-edge" x1="182" y1="52" x2="276" y2="52" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="365" y1="96" x2="365" y2="176" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="278" y1="222" x2="184" y2="222" marker-end="url(#ah2)"/>
+        <line class="d-edge" x1="95" y1="178" x2="95" y2="98" marker-end="url(#ah2)"/>
+
+        <text class="d-lab" x="230" y="44" text-anchor="middle">networks</text>
+        <text class="d-lab" x="374" y="141" text-anchor="start">verdicts</text>
+        <text class="d-lab" x="230" y="214" text-anchor="middle">kept answers</text>
+        <text class="d-lab" x="86" y="141" text-anchor="end">new model</text>
+        <text class="d-head" x="230" y="141" text-anchor="middle">one round</text>
+      </svg>
+    </div>
+    <figcaption>One round. Each round starts from the model the previous round trained. Pass-only, hindsight and unverified differ only in the Keep step. The teacher and the random pool are not loops: each trains the model once.</figcaption>
+  </figure>
+
+  <div class="strats">
+    <div class="strat">
+      <div class="nm">Pass-only<small>loop</small></div>
+      <div>Keep only answers that solve their own task.
+        <div class="chips"><span class="chip">checked</span><span class="chip">wrong answers dropped</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Hindsight<small>loop</small></div>
+      <div>Every valid network computes some function. Relabel each answer with the function it actually computes. A wrong answer becomes a correct example for a different task. Answers for held-out functions are thrown away.
+        <div class="chips"><span class="chip">checked</span><span class="chip">wrong answers relabelled</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Unverified<small>control</small></div>
+      <div>Keep answers without checking them. Expected to teach nothing.
+        <div class="chips"><span class="chip">not checked</span><span class="chip">everything kept</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Teacher<small>ceiling, not a loop</small></div>
+      <div>Train once on correct solutions found by brute-force search.
+        <div class="chips"><span class="chip">solutions given</span><span class="chip">one training run</span></div></div>
+    </div>
+    <div class="strat">
+      <div class="nm">Random pool<small>control</small></div>
+      <div>No model guesses at all. We fill the pool with networks whose weights are random integers from −2 to 2, and label each with the function it computes. Same verifier, same budget: 3,280 networks per round for 10 rounds. Then we train the model once on that pool. This is the comparison with ordinary learning.
+        <div class="chips"><span class="chip">checked</span><span class="chip">random guesses</span><span class="chip">one training run</span></div></div>
+    </div>
+  </div>
+  <p class="strat-note">Two variants of the hindsight loop change only how the model explores. <b>Hotter sampling</b> uses temperature 1.3 instead of 0.8. Temperature controls how random the model's answers are: higher means more varied answers. <b>More tries</b> gives the model 64 tries per task instead of 16.</p>
+</section>
+
+<section id="results">
+  <div class="sec-head"><span class="label">5 · Results of the loops</span><h2>The loop works, and exploration decides how far it gets</h2></div>
+  <p>With only a checker and no teacher, the model learns. The main hindsight loop went from 0% to <span data-fact="t08Final">32.2%</span> of training tasks solved on the first try in <span data-fact="t08FinalRound">30</span> rounds. With hotter sampling it reached <span data-fact="t13r10">42.0%</span> in 10 rounds, and with more tries <span data-fact="tries64r10">40.5%</span>. After the same 10 rounds, the main loop stood at <span data-fact="t08r10">22.9%</span>.</p>
+  <p class="small muted">Solved on the first try means that the model's single most likely answer passes the verifier. We do not sample several answers and pick the best.</p>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Training tasks solved on the first try</h3><span class="label">percent, by round</span></div>
+    <div class="legend" id="chartA-legend"></div>
+    <div class="chart-wrap">
+      <div class="chart" id="chartA"></div>
+      <div class="tip" hidden></div>
+    </div>
+    <figcaption>Round 0 is the base model. Each line ends where its run stopped. The unverified control stays at 0%, under the pass-only line. The two dashed lines are one-off training runs, shown for scale: the random pool (section 6) and the teacher.</figcaption>
+  </figure>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Solved on the first try</h3><span class="label">percent of tasks</span></div>
+    <div class="table-wrap">
+      <table class="results">
+        <thead><tr><th>Model</th><th>Training (205)</th><th>Held out (63)</th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </figure>
+
+  <p>The starting point was low. The base model writes a correctly shaped network <span data-fact="baseShapeOk">91%</span> of the time. But it solves only <span data-fact="baseSolved16">7 of 205</span> training tasks within 16 tries, and <span data-fact="baseHeldOut64">none of the 63</span> held-out tasks even with 64 tries.</p>
+  <p>The gains slowed down. The main loop sat at <span data-fact="t08r25">31.7%</span> from round 25 to 29 and reached <span data-fact="t08Final">32.2%</span> at round 30.</p>
+  <p>Pass-only never got going. It knew <span data-fact="passOnlyKnown">7</span> functions in every one of its <span data-fact="passOnlyRounds">6</span> rounds, because it had almost nothing to learn from. The unverified control, which keeps answers without checking them, ended at <span data-fact="unverifiedFinal">0%</span>.</p>
+  <p>No loop learned anything that carries over to new tasks. On the first try, every loop ended at 0% of held-out tasks. In a few single rounds one of the 63 was solved, and then lost again. Even the teacher, trained on correct solutions for every training task, solves only <span data-fact="teacher150Held">7.9%</span> of held-out tasks on the first try, and <span data-fact="teacherHeldOut16">8 of 63</span> (<span data-fact="teacherHeldOut16Pct">12.7%</span>) within 16 tries.</p>
+</section>
+
+<section id="ordinary">
+  <div class="sec-head"><span class="label">6 · Compared with ordinary learning</span><h2>Blind guessing explores better than the model does</h2></div>
+  <p>In this setting, ordinary training on randomly generated networks, labelled by the verifier, beats every loop we ran. The model trained once on the random pool solves <span data-fact="randomPoolTrain">85.4%</span> of training tasks on the first try. The best loop reached <span data-fact="t13r10">42.0%</span>.</p>
+  <p>The reason is exploration. In a single round, random weights hit <span data-fact="randR1">about 112</span> of the 205 training functions. The model's own guesses, at temperature 0.8, hit <span data-fact="modelR1">24</span>. After 10 rounds the count is <span data-fact="randR10">177</span> against <span data-fact="modelR10">47</span>.</p>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Training functions discovered</h3><span class="label">count of 205, by round</span></div>
+    <div class="legend" id="chartB-legend"></div>
+    <div class="chart-wrap">
+      <div class="chart" id="chartB"></div>
+      <div class="tip" hidden></div>
+    </div>
+    <figcaption>Distinct training functions found so far, counted after each round. A function counts once one network for it has passed the verifier. Random weights is the mean of 20 simulated runs.</figcaption>
+  </figure>
+
+  <p>The model also misses the harder half of the task set. <span data-fact="twoUnitFns">114</span> of the 205 training functions need two hidden units. The temperature 0.8 loop found <span data-fact="t08TwoUnitFound">zero</span> of them in its first 10 rounds, and one by round 30.</p>
+  <p>The random pool we actually trained on held <span data-fact="poolFns">176</span> functions. The model trained on it solves all of the functions that need one hidden unit on the first try, and <span data-fact="poolTwoUnit">74.6%</span> of those that need two. On held-out tasks it reaches <span data-fact="randomPoolHeld">1.6%</span> on the first try and <span data-fact="poolHeldOut16">4.8%</span> within 16 tries.</p>
+  <p>Why does blind guessing win? The task set is small. There are only 256 three-input functions, and the weights are limited to integers from −2 to 2, so random search covers most of the space quickly. A model that has just been trained mostly repeats what it already knows, so its guesses find less and less that is new.</p>
+  <p>The hoped-for advantage of the loop is that its guesses get better as the model learns. At this scale, that advantage did not show up.</p>
+</section>
+
+<section id="rsi">
+  <div class="sec-head"><span class="label">7 · Is this recursive self-improvement?</span><h2>No. It is self-training driven by a verifier.</h2></div>
+  <p>Recursive self-improvement, in the strong sense, means a system that gets better at making itself better, so that each gain speeds up the next. We apply three tests. The loop fails all three.</p>
+  <div class="tests">
+    <div class="test">
+      <div class="nm">Self-application<small>Does the system improve the process that improves it?</small></div>
+      <p class="ex">The loop itself (how to explore, what to keep, how to train) is fixed code that we wrote. The model only gets better at the task.</p>
+      <div class="vd"><span class="no">No</span></div>
+    </div>
+    <div class="test">
+      <div class="nm">Compounding<small>Do gains feed further gains?</small></div>
+      <p class="ex">Gains shrink as the rounds go on and then flatten. The temperature 0.8 loop gained <span data-fact="t08r1Gain">11.7</span> points in round 1, and <span data-fact="lateGain">about 0.5</span> points per round at the end.</p>
+      <div class="vd"><span class="no">No</span></div>
+    </div>
+    <div class="test">
+      <div class="nm">Open-ended measure<small>Can the target keep growing?</small></div>
+      <p class="ex">The task set is fixed at 205 training functions. Once those are solved, there is nothing left to gain.</p>
+      <div class="vd"><span class="no">No</span></div>
+    </div>
+  </div>
+  <p>A real version would need the model to take over parts of its own learning process, and for that to pay off. The next section tests the smallest such step.</p>
+</section>
+
+<section id="selfexplore">
+  <div class="sec-head"><span class="label">8 · The honest step</span><h2>The model sets its own exploration</h2></div>
+  <p>We now hand the model one part of its own learning process: how much to explore on each task. Three runs test whether its choices help. They do not: the self-chosen run ended level with random choice and with the hand-set value.</p>
+
+  <div class="task-grid">
+    <figure>
+      <pre class="prompt"><span class="tag">Prompt</span><span class="p">Task: 2 inputs, 2 hidden units.
+00 -&gt; 0
+01 -&gt; 1
+10 -&gt; 1
+11 -&gt; 0</span>
+<hr><span class="tag">Model chooses</span><span class="a">T = 1.1</span>
+<hr><span class="tag">Model's answer</span><span class="a">W1 = [[1, 1], [1, 1]]
+b1 = [0, -1]
+W2 = [1, -2]
+b2 = 0</span></pre>
+      <figcaption>The prompt format for these runs, shown on XOR. The model first writes the temperature line. Its answer is then sampled at that temperature.</figcaption>
+    </figure>
+    <div style="display:grid;gap:12px;align-content:start">
+      <p>Before each answer, the model now writes one extra line, <code>T = v</code>. It picks a sampling temperature from a menu: 0.5, 0.8, 1.1, 1.4 or 1.7. We then sample its answer at that temperature.</p>
+      <p>One quarter of the time we replace its choice with a random menu value, so that every value keeps being tried.</p>
+    </div>
+  </div>
+
+  <p>The model learns its choice from what worked. We call an answer a <b>progress event</b> when it adds something new to the pool: a new function, or a new distinct answer for a function we already had. The temperature that produced a progress event becomes a training example for the <code>T =</code> line of that task. We keep at most two per task per round, from the last three rounds. So the model learns which temperature leads to progress on which task. Everything else is the hindsight loop from section 4.</p>
+
+  <div class="strats">
+    <div class="strat">
+      <div class="nm">Self-chosen<small>test</small></div>
+      <div>The model picks the temperature for each task.</div>
+    </div>
+    <div class="strat">
+      <div class="nm">Random choice<small>control</small></div>
+      <div>A random menu value every time. Shows what choosing adds over chance.</div>
+    </div>
+    <div class="strat">
+      <div class="nm">Fixed 1.4<small>control</small></div>
+      <div>One temperature, set by hand, for every task.</div>
+    </div>
+  </div>
+  <p>Each run lasts 10 rounds. The self-chosen run succeeds if it beats random choice and matches or beats the hand-set value. We also watch whether the model picks hotter temperatures on tasks it cannot solve yet.</p>
+  <p class="caveat">The extra line changes the prompt format. Compare these three runs with each other, not with the loops in section 5.</p>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Training functions discovered</h3><span class="label">count of 205, by round</span></div>
+    <div class="legend" id="chartC-legend"></div>
+    <div class="chart-wrap">
+      <div class="chart" id="chartC"></div>
+      <div class="tip" hidden></div>
+    </div>
+    <figcaption>Round 0 is the starting model. Runs that have not started yet have no line.</figcaption>
+  </figure>
+
+  <figure class="panel">
+    <div class="v-top"><h3>Where each run stands</h3><span class="label">latest round</span></div>
+    <div class="table-wrap">
+      <table class="runs">
+        <thead><tr><th>Run</th><th>Status</th><th>Functions known</th><th>First try</th><th>Within 16 tries</th><th>Mean chosen T</th></tr></thead>
+        <tbody id="runs-body"></tbody>
+      </table>
+    </div>
+    <figcaption>First try and within 16 tries are percent of the 205 training tasks. Mean chosen T is the mean temperature the model chose across tasks.</figcaption>
+  </figure>
+  <p><span id="t-split">In round 2 of the self-chosen run, the model chose a mean temperature of 0.748 on tasks it had solved before and 0.802 on tasks it had never solved.</span> The two values are almost the same, so the model learned one general setting, not a different one for each task.</p>
+  <p><b>Choosing did not beat chance.</b> After 10 rounds the self-chosen run knows 89 of the 205 training functions and the random-choice run knows 92. On the first try they solve 32.2% and 38.0%. With a single run each, a gap of three functions is within what chance can produce, so we read this as a tie at best. The hand-set run knows 85 functions and solves 41.5% on the first try, the best first-try result of the three.</p>
+  <p><b>The model did learn something real.</b> It started cool, with a mean choice near 0.8. From round 4 it moved to hot. By round 10 its mean choice was 1.38, and the hottest value, 1.7, was its most frequent pick. That agrees with what we found by hand in section 5: hotter sampling explores better. But the model needed four rounds to find this out, and those rounds were spent at the least productive temperatures.</p>
+  <p class="caveat">The scoring rule worked against the self-chosen run early on. A progress event counts any new answer, including a new way of writing a function the model already knows, and it counts events, not events per try. Cool temperatures give more valid answers, so at the start they collected most of the credit: in round 0, 286 of 347 progress events came from 0.5 and 0.8. Measured per try in the random-choice run, 1.1 and 1.4 found the most new functions (3.8 and 3.6 per 1,000 tries) and 0.5 the fewest (1.4). A fairer rule would count only new functions, per try. We have not run that version.</p>
+</section>
+
+<section id="meaning">
+  <div class="sec-head"><span class="label">9 · What it means so far</span><h2>Seven findings</h2></div>
+  <ol class="findings">
+    <li><span><b>Self-improvement from a verifier alone works.</b> Training tasks solved on the first try went from 0% to <span data-fact="t08FinalR">32%</span> in <span data-fact="t08FinalRound">30</span> rounds, and to <span data-fact="t13r10R">42%</span> in 10 rounds with hotter sampling. The unverified control ended at <span data-fact="unverifiedFinal">0%</span>, so the checking is what carries the information.</span></li>
+    <li><span><b>Exploration is the bottleneck.</b> Hotter sampling or more tries nearly doubled the result at round 10 (<span data-fact="t13r10">42.0%</span> and <span data-fact="tries64r10">40.5%</span> against <span data-fact="t08r10">22.9%</span>).</span></li>
+    <li><span><b>Pass-only cannot get started.</b> It knew <span data-fact="passOnlyKnown">7</span> functions, unchanged for <span data-fact="passOnlyRounds">6</span> rounds.</span></li>
+    <li><span><b>Blind guessing plus ordinary training beats every loop here:</b> <span data-fact="randomPoolTrain">85.4%</span>. The task set is small enough for random search.</span></li>
+    <li><span><b>Nothing generalises.</b> Held-out tasks stay near 0% in every loop, and reach only <span data-fact="teacher150Held">7.9%</span> with the teacher. The model memorises.</span></li>
+    <li><span><b>It is not recursive self-improvement.</b> Gains shrink as the rounds go on.</span></li>
+    <li><span><b>Letting the model set its own exploration did not help yet.</b> It learned by itself that hotter sampling pays, but it ended level with picking temperatures at random and with a hand-set value (89 functions against 92 and 85), and it chose the same temperature for solved and unsolved tasks.</span></li>
+  </ol>
+  <p class="caveat">Each result comes from a single run with one random seed.</p>
+</section>
+
+<section id="next">
+  <div class="sec-head"><span class="label">10 · Running now and next</span><h2>The queue on the pod</h2></div>
+  <ol class="queue" id="queue">
+    <li class="grp"><span class="grp">Running and queued, in order</span></li>
+  </ol>
+  <p>All runs are finished. The pod stopped itself ten minutes after the last run.</p>
+  <ol class="queue">
+    <li class="grp"><span class="grp">Done</span></li>
+    <li><span class="i">✓</span><span>Main hindsight loop, temperature 0.8</span><span class="m">to round 30</span></li>
+    <li><span class="i">✓</span><span>Pass-only loop</span><span class="m">6 rounds</span></li>
+    <li><span class="i">✓</span><span>Unverified control</span><span class="m">3 rounds</span></li>
+    <li><span class="i">✓</span><span>Hindsight with hotter sampling</span><span class="m">temperature 1.3, 10 rounds</span></li>
+    <li><span class="i">✓</span><span>Hindsight with more tries</span><span class="m">64 per task, 10 rounds</span></li>
+    <li><span class="i">✓</span><span>Random pool, then one training run</span><span class="m">10 rounds of guesses</span></li>
+    <li><span class="i">✓</span><span>Teacher runs</span><span class="m">10, 40 and 150 passes</span></li>
+    <li class="grp"><span class="grp">After that</span></li>
+    <li><span class="i">→</span><span>A written article about the experiment</span><span class="m">draft written</span></li>
+  </ol>
+  <div class="decision"><span class="label">Open decision afterwards</span><p>Move to four-input functions (65,536 tasks). There, we expect blind guessing to cover far less of the space, and generalisation to have room to appear.</p></div>
+</section>
+
+<section id="hardware">
+  <div class="sec-head"><span class="label">11 · Where it runs</span><h2>From a laptop to one rented GPU</h2></div>
+  <div class="hw">
+    <div class="panel">
+      <span class="label">Before</span>
+      <h3>Apple M1 laptop</h3>
+      <dl>
+        <dt>Training</dt><dd>about 10 s per step</dd>
+        <dt>Memory</dt><dd>repeated failures under an 8 GB limit</dd>
+        <dt>Full run</dt><dd>15 hours or more</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <span class="label">Now</span>
+      <h3>Runpod, RTX 4000 Ada</h3>
+      <dl>
+        <dt>Price</dt><dd data-fact="costRate">$0.28 per hour</dd>
+        <dt>Training</dt><dd>2.8 steps per second</dd>
+        <dt>Sampling</dt><dd>about 120 answers per second</dd>
+        <dt>Speed-up</dt><dd>roughly 28× in training</dd>
+      </dl>
+    </div>
+  </div>
+  <p>The pod ran from <span data-fact="costSince">08:26 UTC on 11 November</span> at <span data-fact="costRate">$0.28 per hour</span>. That comes to <span data-fact="costDay">about $3.00</span> for 10.7 hours, plus a few cents for storage. Results are stored on a network volume and copied to the laptop every ten minutes.</p>
+</section>
+
+<footer>Project folder: weight_writer.</footer>
+
+</div>
+
+<script>
+/* ---- All result numbers live here. Edit this object to update the page. ----
+   Charts, tables, the queue and every number in the text read from it.
+   Numbers in the text that repeat a chart or table value are read from that
+   value, so edit them in one place only. */
+const DATA = {
+  asOf: "11 November 2026, 20:00 CET",
+  status: "all runs finished",   // status pill, after "Status: "
+
+  // Chart A (section 5). Percent of the 205 training tasks solved on the first try.
+  // values[i] is round i; round 0 is the base model. A series may stop early.
+  // color is a CSS token; label: false hides the end label (legend and tooltip still show it).
+  firstTry: {
+    maxRound: 30,
+    series: [
+      { key: "t08", name: "Hindsight, temperature 0.8", short: "T 0.8", color: "--series-1",
+        values: [0, 11.7, 13.7, 15.6, 16.1, 17.1, 20.0, 21.5, 22.4, 22.4, 22.9, 24.4, 24.9, 25.4, 25.4, 25.4,
+                 26.3, 26.3, 26.8, 27.3, 27.8, 28.3, 29.3, 30.7, 31.2, 31.7, 31.7, 31.7, 31.7, 31.7, 32.2] },
+      { key: "t13", name: "Hindsight, temperature 1.3", short: "T 1.3", color: "--series-3",
+        values: [0, 24.4, 30.7, 34.6, 37.1, 38.0, 40.0, 40.5, 41.0, 41.0, 42.0] },
+      { key: "tries64", name: "Hindsight, 64 tries", short: "64 tries", color: "--series-4",
+        values: [0, 25.9, 31.7, 34.6, 36.1, 36.1, 37.1, 38.0, 38.0, 39.5, 40.5] },
+      { key: "passOnly", name: "Pass-only", short: "Pass-only", color: "--series-2",
+        values: [0, 3.4, 3.4, 3.4, 3.4, 3.4, 3.4] },
+      { key: "unverified", name: "Unverified control", short: "Unverified", color: "--series-5", label: false,
+        values: [0, 0.5, 0, 0] }
+    ],
+    // dashed horizontal lines; the value comes from the table row named in "row"
+    refs: [
+      { row: "randomPool", label: "Random pool + training", short: "Random pool" },
+      { row: "teacher150", label: "Teacher", short: "Teacher" }
+    ]
+  },
+
+  // Results table (section 5). Percent solved on the first try:
+  // train = 205 training tasks, heldOut = 63 held-out tasks.
+  // Rows with "from" take their training value from Chart A (series key, round).
+  table: [
+    { group: "Baseline" },
+    { key: "base", label: "Base model", train: 0, heldOut: 0 },
+    { group: "Loops without a teacher" },
+    { label: "Pass-only, round 6", from: "passOnly", round: 6, heldOut: 0 },
+    { label: "Hindsight, temperature 0.8, round 10", from: "t08", round: 10, heldOut: 0 },
+    { label: "Hindsight, temperature 0.8, round 30", from: "t08", round: 30, heldOut: 0 },
+    { label: "Hindsight, temperature 1.3, round 10", from: "t13", round: 10, heldOut: 0 },
+    { label: "Hindsight, 64 tries, round 10", from: "tries64", round: 10, heldOut: 0 },
+    { group: "Controls" },
+    { label: "Unverified, round 3", from: "unverified", round: 3, heldOut: 0 },
+    { key: "randomPool", label: "Random pool + training", train: 85.4, heldOut: 1.6 },
+    { group: "Teacher (ceiling, solutions given)" },
+    { label: "Teacher, 10 passes over the solutions", train: 4.9, heldOut: 0 },
+    { label: "Teacher, 40 passes", train: 100, heldOut: 1.6 },
+    { key: "teacher150", label: "Teacher, 150 passes", train: 100, heldOut: 7.9 }
+  ],
+
+  // Chart B (section 6). Distinct training functions found so far (of 205).
+  // values[i] is round i + 1 (rounds 1 to 10).
+  discovered: {
+    series: [
+      { key: "random", name: "Random weights (mean of 20 simulated runs)", short: "Random", color: "--muted", dash: true,
+        values: [112.0, 128.8, 140.9, 149.3, 155.6, 161.1, 166.3, 170.3, 174.5, 177.4] },
+      { key: "t13", name: "Hindsight, temperature 1.3", short: "T 1.3", color: "--series-3",
+        values: [50, 63, 71, 76, 78, 82, 83, 84, 84, 86] },
+      { key: "tries64", name: "Hindsight, 64 tries", short: "64 tries", color: "--series-4",
+        values: [53, 65, 70, 74, 74, 76, 78, 78, 81, 83] },
+      { key: "t08", name: "Hindsight, temperature 0.8", short: "T 0.8", color: "--series-1",
+        values: [24, 28, 32, 33, 35, 40, 44, 46, 46, 47] }
+    ]
+  },
+
+  // Numbers that appear only in the text.
+  facts: {
+    baseShapeOk: "91%",            // base model writes a correctly shaped network
+    baseSolved16: "7 of 205",      // base model, training tasks solved within 16 tries
+    baseHeldOut64: "none of the 63", // base model, held-out tasks solved within 64 tries
+    passOnlyKnown: "7",            // functions known by pass-only in every round
+    teacherHeldOut16: "8 of 63",   // 150-pass teacher, held-out within 16 tries
+    teacherHeldOut16Pct: "12.7%",
+    lateGain: "about 0.5",         // T 0.8 loop, points gained per round at the end
+    twoUnitFns: "114",             // training functions that need two hidden units
+    t08TwoUnitFound: "zero",       // of those, found by the T 0.8 loop
+    poolFns: "176",                // functions in the random pool used for training
+    poolTwoUnit: "74.6%",          // random-pool model, first try, two-unit functions
+    poolHeldOut16: "4.8%"          // random-pool model, held-out within 16 tries
+  },
+
+  // Section 8, live. One entry per run. status: "running", "queued" or "done".
+  // rounds[i] is round i (0 = starting model):
+  //   fns = training functions known, first = % solved on first try,
+  //   s16 = % solved within 16 tries, t = mean chosen temperature,
+  //   tSolved / tUnsolved = mean chosen temperature on tasks solved before / never solved (null if none).
+  selfexplore: {
+    totalRounds: 10,
+    runs: [
+      { key: "self", name: "Self-chosen", label: "Self-chosen temperature", status: "done", color: "--series-7",
+          rounds: [
+            { fns: 0, first: 0, s16: 2.4, t: 0.838, tSolved: null, tUnsolved: 0.838 },
+            { fns: 40, first: 11.2, s16: 19.5, t: 0.741, tSolved: 0.692, tUnsolved: 0.743 },
+            { fns: 51, first: 13.2, s16: 23.4, t: 0.792, tSolved: 0.748, tUnsolved: 0.802 },
+            { fns: 59, first: 12.7, s16: 26.3, t: 0.800, tSolved: 0.754, tUnsolved: 0.816 },
+            { fns: 67, first: 17.1, s16: 29.8, t: 0.975, tSolved: 0.928, tUnsolved: 0.993 },
+            { fns: 73, first: 18.5, s16: 32.2, t: 1.136, tSolved: 1.164, tUnsolved: 1.124 },
+            { fns: 75, first: 20.0, s16: 34.6, t: 1.283, tSolved: 1.301, tUnsolved: 1.273 },
+            { fns: 80, first: 21.5, s16: 37.1, t: 1.372, tSolved: 1.373, tUnsolved: 1.371 },
+            { fns: 83, first: 28.3, s16: 38.5, t: 1.373, tSolved: 1.389, tUnsolved: 1.363 },
+            { fns: 84, first: 32.2, s16: 39.5, t: 1.371, tSolved: 1.434, tUnsolved: 1.328 },
+            { fns: 89, first: 32.2, s16: 42.4, t: 1.380, tSolved: 1.383, tUnsolved: 1.378 }
+          ] },
+        { key: "uniform", name: "Random choice", label: "Random-choice control", status: "done", color: "--muted", dash: true,
+          rounds: [
+            { fns: 0, first: 0.5, s16: 2.9, t: null, tSolved: null, tUnsolved: null },
+            { fns: 41, first: 14.6, s16: 20.5, t: null, tSolved: null, tUnsolved: null },
+            { fns: 54, first: 17.6, s16: 26.8, t: null, tSolved: null, tUnsolved: null },
+            { fns: 62, first: 22.4, s16: 30.2, t: null, tSolved: null, tUnsolved: null },
+            { fns: 66, first: 24.4, s16: 32.7, t: null, tSolved: null, tUnsolved: null },
+            { fns: 79, first: 30.7, s16: 38.5, t: null, tSolved: null, tUnsolved: null },
+            { fns: 85, first: 30.2, s16: 42.0, t: null, tSolved: null, tUnsolved: null },
+            { fns: 89, first: 30.2, s16: 42.9, t: null, tSolved: null, tUnsolved: null },
+            { fns: 90, first: 35.1, s16: 43.4, t: null, tSolved: null, tUnsolved: null },
+            { fns: 92, first: 36.6, s16: 44.9, t: null, tSolved: null, tUnsolved: null },
+            { fns: 92, first: 38.0, s16: 44.9, t: null, tSolved: null, tUnsolved: null }
+          ] },
+        { key: "fixed", name: "Fixed 1.4", label: "Fixed 1.4 control", status: "done", color: "--series-6",
+          rounds: [
+            { fns: 0, first: 0.5, s16: 1.0, t: null, tSolved: null, tUnsolved: null },
+            { fns: 36, first: 17.6, s16: 18.0, t: null, tSolved: null, tUnsolved: null },
+            { fns: 56, first: 27.8, s16: 27.8, t: null, tSolved: null, tUnsolved: null },
+            { fns: 62, first: 30.2, s16: 30.7, t: null, tSolved: null, tUnsolved: null },
+            { fns: 69, first: 33.7, s16: 33.7, t: null, tSolved: null, tUnsolved: null },
+            { fns: 72, first: 34.6, s16: 35.1, t: null, tSolved: null, tUnsolved: null },
+            { fns: 73, first: 35.1, s16: 36.1, t: null, tSolved: null, tUnsolved: null },
+            { fns: 77, first: 37.6, s16: 37.6, t: null, tSolved: null, tUnsolved: null },
+            { fns: 79, first: 38.5, s16: 39.0, t: null, tSolved: null, tUnsolved: null },
+            { fns: 83, first: 40.5, s16: 40.5, t: null, tSolved: null, tUnsolved: null },
+            { fns: 85, first: 41.5, s16: 41.5, t: null, tSolved: null, tUnsolved: null }
+          ] }
+    ]
+  },
+
+  // Section 11
+  cost: {
+    since: "08:26 to 19:07 UTC on 11 November",
+    rate: "$0.28 per hour",
+    dayEstimate: "about $3.00"     // an estimate
+  }
+};
+
+/* ---- verifier: pure functions (also checked under node) ---- */
+/* VERIFIER-START */
+function runNet(W1, b1, W2, b2, x) {
+  const h = W1.map((row, i) => Math.max(0, row.reduce((s, w, j) => s + w * x[j], 0) + b1[i]));
+  const z = W2.reduce((s, w, i) => s + w * h[i], 0) + b2;
+  return z > 0.5 ? 1 : 0;
+}
+function computeBits(W1, b1, W2, b2) {
+  return [[0, 0], [0, 1], [1, 0], [1, 1]].map(x => runNet(W1, b1, W2, b2, x)).join("");
+}
+/* VERIFIER-END */
+
+const FN_NAMES = {
+  "0000": "constant 0", "0001": "AND", "0010": "x1 and not x2", "0011": "x1",
+  "0100": "not x1 and x2", "0101": "x2", "0110": "XOR", "0111": "OR",
+  "1000": "NOR", "1001": "XNOR", "1010": "not x2", "1011": "x1 or not x2",
+  "1100": "not x1", "1101": "not x1 or x2", "1110": "NAND", "1111": "constant 1"
+};
+const TARGET = "0110";
+const DEFAULTS = { w1_00: 1, w1_01: 1, w1_10: 1, w1_11: 1, b1_0: 0, b1_1: -1, w2_0: 1, w2_1: -2, b2: 0 };
+
+(function verifier() {
+  const ids = Object.keys(DEFAULTS);
+  const el = id => document.getElementById(id);
+  function setAll(vals) { ids.forEach(id => { el(id).value = vals[id]; }); update(); }
+  function update() {
+    const v = {};
+    let missing = false;
+    ids.forEach(id => {
+      const n = parseFloat(el(id).value);
+      if (!isFinite(n)) missing = true;
+      v[id] = n;
+      el(id).classList.toggle("changed", isFinite(n) && n !== DEFAULTS[id]);
+    });
+    const body = el("tt-body"), verdict = el("verdict");
+    const relabel = el("v-relabel");
+    if (missing) {
+      verdict.className = "verdict bad";
+      el("v-main").textContent = "Fill in every weight with a number.";
+      el("v-bits").textContent = "????"; el("v-name").textContent = "";
+      relabel.hidden = true;
+      return;
+    }
+    const W1 = [[v.w1_00, v.w1_01], [v.w1_10, v.w1_11]], b1 = [v.b1_0, v.b1_1], W2 = [v.w2_0, v.w2_1];
+    const bits = computeBits(W1, b1, W2, v.b2);
+    const inputs = ["00", "01", "10", "11"];
+    let wrong = 0;
+    body.innerHTML = inputs.map((inp, i) => {
+      const ok = bits[i] === TARGET[i];
+      if (!ok) wrong++;
+      return `<tr><td>${inp}</td><td class="c">${TARGET[i]}</td><td class="c">${bits[i]}</td><td>` +
+        (ok ? '<span class="chk ok">✓ pass</span>' : '<span class="chk bad">✗ fail</span>') + "</td></tr>";
+    }).join("");
+    el("v-bits").textContent = bits;
+    el("v-name").textContent = "(" + FN_NAMES[bits] + ")";
+    if (wrong === 0) {
+      verdict.className = "verdict ok";
+      el("v-main").textContent = "Passes: all 4 rows match XOR.";
+      relabel.hidden = true;
+    } else {
+      verdict.className = "verdict bad";
+      el("v-main").textContent = "Fails: " + wrong + " of 4 rows wrong for XOR.";
+      relabel.textContent = "Wrong for XOR, but a correct network for the function " + bits + ".";
+      relabel.hidden = false;
+    }
+  }
+  ids.forEach(id => el(id).addEventListener("input", update));
+  el("btn-reset").addEventListener("click", () => setAll(DEFAULTS));
+  el("btn-break").addEventListener("click", () => setAll(Object.assign({}, DEFAULTS, { w2_0: 1, w2_1: -1 })));
+  setAll(DEFAULTS);
+})();
+
+/* ---- helpers ---- */
+const $ = id => document.getElementById(id);
+const last = arr => arr[arr.length - 1];
+const pct1 = v => (v === 0 || v === 100) ? v + "%" : v.toFixed(1) + "%";
+const pct0 = v => Math.round(v) + "%";
+const num = v => Number.isInteger(v) ? String(v) : v.toFixed(1);
+const seriesA = k => DATA.firstTry.series.find(s => s.key === k).values;
+const seriesB = k => DATA.discovered.series.find(s => s.key === k).values;
+const row = k => DATA.table.find(r => r.key === k);
+const trainOf = r => r.from ? seriesA(r.from)[r.round] : r.train;
+
+/* ---- facts in the text ---- */
+const FACTS = (function () {
+  const t08 = seriesA("t08"), passOnly = seriesA("passOnly");
+  return {
+    asOf: DATA.asOf,
+    status: DATA.status,
+    t08Final: pct1(last(t08)),
+    t08FinalR: pct0(last(t08)),
+    t08FinalRound: String(t08.length - 1),
+    t08r10: pct1(t08[10]),
+    t08r25: pct1(t08[25]),
+    t08r1Gain: (t08[1] - t08[0]).toFixed(1),
+    t13r10: pct1(seriesA("t13")[10]),
+    t13r10R: pct0(seriesA("t13")[10]),
+    tries64r10: pct1(seriesA("tries64")[10]),
+    passOnlyRounds: String(passOnly.length - 1),
+    unverifiedFinal: pct1(last(seriesA("unverified"))),
+    randomPoolTrain: pct1(trainOf(row("randomPool"))),
+    randomPoolHeld: pct1(row("randomPool").heldOut),
+    teacher150Held: pct1(row("teacher150").heldOut),
+    randR1: "about " + Math.round(seriesB("random")[0]),
+    modelR1: String(seriesB("t08")[0]),
+    randR10: String(Math.round(last(seriesB("random")))),
+    modelR10: String(last(seriesB("t08"))),
+    costSince: DATA.cost.since,
+    costRate: DATA.cost.rate,
+    costDay: DATA.cost.dayEstimate
+  };
+})();
+document.querySelectorAll("[data-fact]").forEach(node => {
+  const k = node.getAttribute("data-fact");
+  const val = k in FACTS ? FACTS[k] : DATA.facts[k];
+  if (val != null) node.textContent = val;
+});
+
+/* ---- results table ---- */
+(function table() {
+  const cell = n => `<td class="v"><div class="cell"><span class="x">${pct1(n)}</span><span class="t" aria-hidden="true"><div style="width:${Math.min(100, n)}%"></div></span></div></td>`;
+  $("results-body").innerHTML = DATA.table.map(r =>
+    r.group ? `<tr class="grp"><td colspan="3">${r.group}</td></tr>`
+            : `<tr><td>${r.label}</td>${cell(trainOf(r))}${cell(r.heldOut)}</tr>`
+  ).join("");
+})();
+
+/* ---- self-chosen exploration: table, sentence, queue ---- */
+const SE = DATA.selfexplore;
+const statusText = run => run.status === "running"
+  ? `running, round ${Math.max(0, run.rounds.length - 1)} of ${SE.totalRounds}`
+  : run.status === "done" ? "done" : "queued";
+(function selfExplore() {
+  const na = '<span class="muted">n/a</span>';
+  $("runs-body").innerHTML = SE.runs.map(run => {
+    const r = run.rounds.length ? last(run.rounds) : null;
+    const st = run.status === "running" || run.status === "done" ? run.status : "queued";
+    return `<tr><td>${run.name}</td><td><span class="run-st ${st}">${statusText(run)}</span></td>` +
+      (r ? `<td>${r.fns}</td><td>${pct1(r.first)}</td><td>${pct1(r.s16)}</td><td>${r.t == null ? na : r.t.toFixed(3)}</td>`
+         : `<td>${na}</td><td>${na}</td><td>${na}</td><td>${na}</td>`) + "</tr>";
+  }).join("");
+
+  const self = SE.runs.find(r => r.key === "self");
+  const split = self ? self.rounds.map((x, i) => Object.assign({ i }, x)).filter(x => x.tSolved != null && x.tUnsolved != null) : [];
+  const s = last(split);
+  $("t-split").textContent = s
+    ? `In round ${s.i} of the self-chosen run, the model chose a mean temperature of ${s.tSolved.toFixed(3)} on tasks it had solved before and ${s.tUnsolved.toFixed(3)} on tasks it had never solved.`
+    : "The self-chosen run has no temperatures split by task yet.";
+
+  $("queue").insertAdjacentHTML("beforeend", SE.runs.map((run, i) =>
+    `<li><span class="i">${i + 1}</span><span>${run.label}</span><span class="m">${run.status === "running" ? statusText(run) : SE.totalRounds + " rounds, " + statusText(run)}</span></li>`).join(""));
+})();
+
+/* ---- line charts: hand-written SVG, hover tooltip, redraw on resize and theme change ---- */
+const REDRAW = [];
+function lineChart(o) {
+  // o: id, title, x0, x1, xTicks, yMax, yTicks, fmt, tipTitle(x), series [{name, short, color, dash, label, values, note}], refs [{value, label, short}]
+  const host = $(o.id), wrap = host.parentNode, tip = wrap.querySelector(".tip");
+  $(o.id + "-legend").innerHTML = o.series.map(s =>
+    `<span><i class="${s.dash ? "dash" : ""}" style="--c:var(${s.color});background:var(${s.color})"></i>${s.name}${s.note ? ` <span class="muted">(${s.note})</span>` : ""}</span>`).join("");
+  let geo = null;
+  const estW = t => t.length * 7 + 6;
+  const colOf = s => `var(${s.color})`;
+
+  function draw() {
+    const W = Math.max(280, host.clientWidth), narrow = W < 480, H = narrow ? 250 : 300;
+    const ends = o.series.filter(s => s.values.length && s.label !== false).map(s => {
+      const li = s.values.length - 1, v = s.values[li];
+      return { s, li, v, text: s.short + " " + o.fmt(v) };
+    });
+    const rightNeed = ends.filter(e => o.x0 + e.li === o.x1).reduce((a, e) => Math.max(a, estW(e.text) + 10), 16);
+    const m = { l: 40, r: rightNeed, t: 22, b: 36 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const x = r => m.l + ((r - o.x0) / (o.x1 - o.x0)) * pw;
+    const y = v => m.t + ph - (v / o.yMax) * ph;
+    geo = { x, y, m, pw, ph, W, H };
+
+    const aria = o.title + ". " + o.series.filter(s => s.values.length).map(s =>
+      s.name + ": " + s.values.map((v, i) => "round " + (o.x0 + i) + " " + o.fmt(v)).join(", ")).join(". ");
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${aria}">`;
+    o.yTicks.forEach(v => {
+      svg += `<line class="c-grid" x1="${m.l}" x2="${m.l + pw}" y1="${y(v)}" y2="${y(v)}"/>`;
+      svg += `<text class="c-axis" x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${o.tick(v)}</text>`;
+    });
+    o.xTicks.forEach(r => {
+      svg += `<text class="c-axis" x="${x(r)}" y="${m.t + ph + 18}" text-anchor="middle">${r}</text>`;
+    });
+    svg += `<text class="c-axis" x="${m.l + pw / 2}" y="${H - 2}" text-anchor="middle">round</text>`;
+    (o.refs || []).forEach(rf => {
+      svg += `<line class="c-ref" x1="${m.l}" x2="${m.l + pw}" y1="${y(rf.value)}" y2="${y(rf.value)}"/>`;
+      svg += `<text class="c-ref-lab" x="${m.l + 6}" y="${y(rf.value) - 6}">${narrow ? rf.short : rf.label} ${o.fmt(rf.value)}</text>`;
+    });
+    svg += `<line class="c-cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ph}" visibility="hidden"/>`;
+    o.series.forEach(s => {
+      if (!s.values.length) return;
+      const pts = s.values.map((v, i) => `${x(o.x0 + i)},${y(v)}`).join(" ");
+      svg += `<polyline points="${pts}" fill="none" style="stroke:${colOf(s)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ' stroke-dasharray="6 4"' : ""}/>`;
+      const li = s.values.length - 1;
+      svg += `<circle cx="${x(o.x0 + li)}" cy="${y(s.values[li])}" r="4.5" style="fill:${colOf(s)}" class="c-hov"/>`;
+    });
+
+    // end labels: start at the end point, then push apart any that overlap
+    const L = ends.map(e => ({ e, x: x(o.x0 + e.li) + 9, y: y(e.v) + 4, w: estW(e.text) }));
+    for (let it = 0; it < 40; it++) {
+      let moved = false;
+      for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+        const a = L[i], b = L[j];
+        if (a.x < b.x + b.w && b.x < a.x + a.w && Math.abs(a.y - b.y) < 14) {
+          const push = (14 - Math.abs(a.y - b.y)) / 2 + 0.1;
+          const up = a.y <= b.y ? a : b, dn = up === a ? b : a;
+          up.y -= push; dn.y += push; moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    L.forEach(l => {
+      svg += `<text class="c-end" x="${l.x}" y="${l.y}">${l.e.s.short}<tspan class="c-end2" dx="6">${o.fmt(l.e.v)}</tspan></text>`;
+    });
+    svg += `<g class="hov-dots"></g>`;
+    svg += `<rect class="hit" x="${m.l - 10}" y="0" width="${pw + 20}" height="${H}" fill="transparent"/>`;
+    svg += `</svg>`;
+    host.innerHTML = svg;
+    const hit = host.querySelector(".hit");
+    hit.addEventListener("pointermove", move);
+    hit.addEventListener("pointerdown", move);
+    hit.addEventListener("pointerleave", hide);
+  }
+
+  function hide() {
+    tip.hidden = true;
+    const cross = host.querySelector(".c-cross");
+    if (cross) cross.setAttribute("visibility", "hidden");
+    const g = host.querySelector(".hov-dots");
+    if (g) g.innerHTML = "";
+  }
+
+  function move(e) {
+    const rect = host.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (geo.W / rect.width);
+    const span = o.x1 - o.x0;
+    const r = Math.max(o.x0, Math.min(o.x1, Math.round(o.x0 + (px - geo.m.l) / geo.pw * span)));
+    const cx = geo.x(r);
+    const cross = host.querySelector(".c-cross");
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    let dots = "";
+    tip.innerHTML = `<b>${o.tipTitle(r)}</b>` + o.series.map(s => {
+      const v = s.values[r - o.x0];
+      if (v != null) dots += `<circle cx="${cx}" cy="${geo.y(v)}" r="4" style="fill:var(${s.color})" class="c-hov"/>`;
+      return `<span class="r"><i style="background:var(${s.color})"></i>${s.short}: ${v == null ? (s.values.length ? "not run" : "not started") : o.fmt(v)}</span>`;
+    }).join("");
+    host.querySelector(".hov-dots").innerHTML = dots;
+    tip.hidden = false;
+    const tw = tip.offsetWidth;
+    let left = cx + 12;
+    if (left + tw > geo.W) left = cx - 12 - tw;
+    tip.style.left = Math.max(0, left) + "px";
+    tip.style.top = geo.m.t + 4 + "px";
+  }
+
+  draw();
+  REDRAW.push(draw);
+  let lastW = host.clientWidth;
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { if (host.clientWidth !== lastW) { lastW = host.clientWidth; draw(); } }).observe(host);
+  }
+}
+
+const range = (a, b, step) => { const out = []; for (let v = a; v <= b; v += step) out.push(v); return out; };
+
+lineChart({
+  id: "chartA", title: "Training tasks solved on the first try, percent by round",
+  x0: 0, x1: DATA.firstTry.maxRound, xTicks: range(0, DATA.firstTry.maxRound, 5),
+  yMax: 100, yTicks: [0, 20, 40, 60, 80, 100], tick: v => v + "%", fmt: pct1,
+  tipTitle: r => "Round " + r + (r === 0 ? " (base model)" : ""),
+  series: DATA.firstTry.series,
+  refs: DATA.firstTry.refs.map(rf => ({ value: trainOf(row(rf.row)), label: rf.label, short: rf.short }))
+});
+
+lineChart({
+  id: "chartB", title: "Training functions discovered, count of 205 by round",
+  x0: 1, x1: DATA.discovered.series[0].values.length, xTicks: range(1, DATA.discovered.series[0].values.length, 1),
+  yMax: 205, yTicks: [0, 50, 100, 150, 205], tick: v => String(v), fmt: num,
+  tipTitle: r => "Round " + r,
+  series: DATA.discovered.series
+});
+
+lineChart({
+  id: "chartC", title: "Self-chosen exploration runs, training functions discovered by round",
+  x0: 0, x1: SE.totalRounds, xTicks: range(0, SE.totalRounds, 1),
+  yMax: 205, yTicks: [0, 50, 100, 150, 205], tick: v => String(v), fmt: num,
+  tipTitle: r => "Round " + r + (r === 0 ? " (starting model)" : ""),
+  series: SE.runs.map(run => ({
+    key: run.key, name: run.name, short: run.name, color: run.color, dash: run.dash,
+    note: run.status === "queued" ? "queued" : null,
+    values: run.rounds.map(x => x.fns)
+  }))
+});
+
+const redrawAll = () => REDRAW.forEach(f => f());
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+if (mq.addEventListener) mq.addEventListener("change", redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
