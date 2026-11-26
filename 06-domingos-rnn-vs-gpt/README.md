@@ -26,7 +26,7 @@ Validation perplexity at the end of each run (lower is better):
 | 65.5M tokens (batch 32, 4,000 steps) | 170.92 | — | **125.38** | 158.71 |
 | 250M tokens (batch 64, 7,630 steps) | 66.84 | **58.16** | 79.43 | 96.96 |
 
-* **With little data the recurrent models lead; with more data the Transformers overtake.** At 65.5M tokens both recurrent models are ahead of `microgpt`. At 250M tokens both GPT variants are ahead of both recurrent models. Within the 250M run, the LSTM is ahead of sinusoidal `microgpt` at the first two checkpoints (31M and 63M tokens) and behind from 94M tokens on.
+* **The Transformers win at 250M tokens; the recurrent models lead early only against the sinusoidal GPT.** At 65.5M tokens both recurrent models are ahead of `microgpt` (that run had no rotary model). At 250M tokens both GPT variants are ahead of both recurrent models. Within the 250M run, `microgpt_rope` is ahead of the LSTM at every checkpoint, though only just at the first (176.8 vs 180.8 at 31M tokens); the LSTM is ahead of sinusoidal `microgpt` at 31M and 63M tokens and behind from 94M tokens on. So the early lead of the recurrent models may come from the weaker position encoding of the baseline.
 * **The claim "an RNN with these additions does the same" is not supported at 250M tokens** in this small setup.
 * **In-context recall is at chance** (about 17–38%, chance 25%) for all four models in both runs, so the recall test supports no conclusion.
 * **Caveats.** The two runs differ in batch size and step count, so they are two separate runs, not one curve. One seed each. Models have about 30M parameters (10.6M non-embedding).
