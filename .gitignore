@@ -7,6 +7,7 @@ __pycache__/
 bundle.sh
 models/
 runs/
-runs-pod/
+runs-*/
 runs_gpu/
 runs_smoke*/
+.DS_Store

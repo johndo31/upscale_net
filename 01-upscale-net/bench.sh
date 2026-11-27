@@ -6,10 +6,17 @@
 set -e
 MODEL="$1"; NAME="$2"; LIMIT="${3:-300}"; DEVICE="${4:-cuda}"
 PY="${PY:-.venv/bin}"
+if [ -x "$PY/lm_eval" ]; then
+  LM_EVAL="$PY/lm_eval"
+elif command -v lm_eval >/dev/null 2>&1; then
+  LM_EVAL="$(command -v lm_eval)"
+else
+  LM_EVAL="python3 -m lm_eval"
+fi
 mkdir -p runs/bench
 LIM=""; [ "$LIMIT" != "0" ] && LIM="--limit $LIMIT"
 run() {  # tasks batch
-  "$PY/lm_eval" --model hf \
+  $LM_EVAL --model hf \
     --model_args "pretrained=$MODEL,dtype=bfloat16,max_length=4096" \
     --tasks "$1" --device "$DEVICE" --batch_size "$2" $LIM \
     --output_path "runs/bench/$NAME" 2>&1 | tee -a "runs/bench/$NAME.log" | grep -E '^\|'
@@ -21,7 +28,7 @@ run wikitext 1
 # DeepSeek-R1-Distill, whose main skill the other tasks do not measure.
 if [ "${BENCH_REASONING:-0}" = "1" ]; then
   GLIM="--limit ${REASONING_LIMIT:-250}"; [ "$LIMIT" != "0" ] && GLIM="$LIM"
-  "$PY/lm_eval" --model hf \
+  $LM_EVAL --model hf \
     --model_args "pretrained=$MODEL,dtype=bfloat16,max_length=4096" \
     --tasks gsm8k --device "$DEVICE" --batch_size 16 $GLIM \
     --gen_kwargs max_gen_toks=1024 \

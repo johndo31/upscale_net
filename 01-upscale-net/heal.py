@@ -16,6 +16,7 @@ data position). `--resume` continues from state.pt; `--stop-after N` stops
 after step N (state saved) so a run can be paused, compared, and resumed later.
 """
 import os
+import sys
 import random
 import argparse
 import json
@@ -282,6 +283,10 @@ def main():
     prune_checkpoints(run, 0, record)          # final model saved: intermediate checkpoints are redundant
     if state_path.exists():
         state_path.unlink()                    # the final model is saved; the 15 GB training state is no longer needed
+    log.close()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)                                # avoid HF datasets streaming/aiohttp teardown hang on exit
 
 
 def prune_checkpoints(run, keep, record):

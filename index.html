@@ -923,11 +923,14 @@
     <div class="two-col">
       <div class="chart-box">
         <div class="chart-head">
-          <span class="chart-title">Held-Out FineWeb-Edu Loss Across 1B Healing Tokens</span>
-          <span class="section-sub">Crossover at Step 10,000 (~655M tok)</span>
+          <span class="chart-title" id="exp01Title">Held-Out FineWeb-Edu Loss Across 1B Healing Tokens</span>
+          <div class="tab-row" id="exp01Tabs">
+            <button class="tab-btn active" data-mode="small">Small (0.5B→1.05B)</button>
+            <button class="tab-btn" data-mode="med">Med (1.5B→3.8B)</button>
+          </div>
         </div>
         <svg class="chart" id="chart-exp01" viewBox="0 0 520 230"></svg>
-        <div class="chart-legend">
+        <div class="chart-legend" id="exp01Legend">
           <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>Grown 1.05B (9.0h H100)</span>
           <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>Control 0.5B (5.7h H100)</span>
         </div>
@@ -960,9 +963,9 @@
 
     <div class="pending-strip">
       <div>
-        <strong>Big Mode In Queue (<code>ds8b</code>):</strong> <code>DeepSeek-R1-Distill-Qwen-1.5B → 8.22B</code> (exact Llama-3-8B shape, 100M tokens + 20% <code>OpenR1-Math-220k</code> + 1.5B control + GSM8K).
+        <strong>Med Mode (<code>ds4b</code> · <code>DeepSeek-R1-Distill-Qwen-1.5B → 3.80B</code>, 100M tok + 20% OpenR1-Math):</strong> Exact fp32 growth verified (<code>max|Δlogit| = 6.39e-5</code>, <code>34/34</code> greedy match; GSM8K 5-shot <code>73.0%</code> source vs <code>74.5%</code> grown step-0). All 1,525 healing steps completed on A100 (<code>6h 24m</code>, held-out loss <code>3.3991 → 2.7886</code>, <code>−0.611</code> nats); token-matched 1.5B control running now.
       </div>
-      <span class="verdict-pill tag-amber">Auto-Polling Colab G4 (96 GB)</span>
+      <span class="verdict-pill tag-blue">3.8B Done · 1.5B Control Running</span>
     </div>
   </section>
 
@@ -1349,18 +1352,21 @@ WEIGHTS (8 non-zero floats):
     <div class="two-col">
       <div class="chart-box">
         <div class="chart-head">
-          <span class="chart-title">65.5M-Token Run: Validation Curves (A100 · Identical Data Stream)</span>
+          <span class="chart-title" id="exp06Title">250M-Token Run: Validation Perplexity (A100 · Identical Stream)</span>
           <div class="tab-row" id="domTabs">
-            <button class="tab-btn active" data-mode="tokens">PPL vs Tokens</button>
-            <button class="tab-btn" data-mode="time">PPL vs Wall-Clock</button>
-            <button class="tab-btn" data-mode="pos">Loss by Position</button>
+            <button class="tab-btn active" data-mode="tokens250">250M PPL</button>
+            <button class="tab-btn" data-mode="pos250">250M Pos</button>
+            <button class="tab-btn" data-mode="tokens">65M PPL</button>
+            <button class="tab-btn" data-mode="time">65M Time</button>
+            <button class="tab-btn" data-mode="pos">65M Pos</button>
           </div>
         </div>
         <svg class="chart" id="chart-exp06" viewBox="0 0 520 245"></svg>
-        <div class="chart-legend">
-          <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (10.65M · 191.8k tok/s)</span>
-          <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn + softmax gate (10.65M · 161.6k tok/s)</span>
-          <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (10.64M · 256.9k tok/s)</span>
+        <div class="chart-legend" id="exp06Legend">
+          <span class="leg-item"><span class="leg-dot" style="background:var(--violet)"></span>microgpt_rope (58.2 PPL · 247.7k tok/s)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (66.8 PPL · 268.3k tok/s)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (79.4 PPL · 203.6k tok/s)</span>
+          <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn (97.0 PPL · 198.5k tok/s)</span>
         </div>
       </div>
 
@@ -1436,7 +1442,7 @@ WEIGHTS (8 non-zero floats):
             <td>Does exact 2× model growth beat continued training?</td>
             <td>Token-matched 0.5B trained on identical 1B tokens</td>
             <td>Exact <code>6e-5</code> logit match; <code>−0.006</code> nat edge at 1B tok</td>
-            <td>Tied on all 5 benchmarks (<code>54.0 vs 54.3</code>); <code>1.6×</code> slower (loses at equal compute). <em>8.22B Big Mode queued on G4.</em></td>
+            <td>Tied on all 5 benchmarks (<code>54.0 vs 54.3</code>); <code>1.6×</code> slower (loses at equal compute). <em>3.8B Med Mode (100M tok) dropped loss <code>3.399→2.789</code>; 1.5B control running.</em></td>
             <td><span class="kpi-tag tag-amber" style="margin:0;">Rounding Error</span></td>
           </tr>
           <tr>
@@ -1672,10 +1678,11 @@ const EXP04_DATA = {
     base: [52.99, 49.22, 46.48, 50.20],
   }
 };
+let activeExp01Mode = 'small';
 let activeGraftTask = 'carry';
 let activeRealGraftTask = 'sums';
 let activeTwView = 'ood';
-let activeDomMode = 'tokens';
+let activeDomMode = 'tokens250';
 
 // Exp 04 run 2: natural_graft_results.json (mean over 3 seeds)
 const EXP04B_DATA = {
@@ -1698,17 +1705,42 @@ const EXP04B_DATA = {
 };
 
 function renderExp01() {
-  drawLineChart('chart-exp01', {
-    xLabels: ['100', '2k', '5k', '10k', '15.3k'],
-    yMin: 2.56, yMax: 2.68, yTicks: 4,
-    yFmt: v => v.toFixed(3),
-    xTitle: 'Healing Steps (65.5k tokens / step)',
-    series: [
-      { name: 'Grown 1.05B', color: cssVar('--primary'), data: [2.652, 2.666, 2.648, 2.604, 2.578] },
-      { name: 'Control 0.5B', color: cssVar('--amber'), data: [2.622, 2.646, 2.636, 2.604, 2.584], dash: '5,4' },
-    ],
-    showValues: true
-  });
+  const title = document.getElementById('exp01Title');
+  const leg = document.getElementById('exp01Legend');
+  if (activeExp01Mode === 'small') {
+    title.textContent = 'Held-Out FineWeb-Edu Loss Across 1B Healing Tokens';
+    drawLineChart('chart-exp01', {
+      xLabels: ['100', '2k', '5k', '10k', '15.3k'],
+      yMin: 2.56, yMax: 2.68, yTicks: 4,
+      yFmt: v => v.toFixed(3),
+      xTitle: 'Healing Steps (65.5k tokens / step · Crossover at 10k)',
+      series: [
+        { name: 'Grown 1.05B', color: cssVar('--primary'), data: [2.652, 2.666, 2.648, 2.604, 2.578] },
+        { name: 'Control 0.5B', color: cssVar('--amber'), data: [2.622, 2.646, 2.636, 2.604, 2.584], dash: '5,4' },
+      ],
+      showValues: true
+    });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>Grown 1.05B (9.0h H100)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>Control 0.5B (5.7h H100)</span>
+    `;
+  } else {
+    title.textContent = 'Med Mode (3.8B Grown): FineWeb-Edu + 20% OpenR1-Math (100M tok)';
+    drawLineChart('chart-exp01', {
+      xLabels: ['0', '100', '300', '600', '1000', '1300', '1525'],
+      yMin: 2.75, yMax: 3.45, yTicks: 4,
+      yFmt: v => v.toFixed(2),
+      xTitle: 'Healing Steps (65.5k tokens / step · 100M total on A100)',
+      series: [
+        { name: 'Grown 3.8B', color: cssVar('--primary'), data: [3.3991, 3.0272, 2.9052, 2.8493, 2.8091, 2.7942, 2.7886], width: 3 },
+      ],
+      showValues: true
+    });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>Grown 3.80B (6h 24m A100 · −0.611 nats)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>Control 1.5B (running now on identical stream)</span>
+    `;
+  }
 }
 
 function renderExp02() {
@@ -1840,7 +1872,52 @@ function renderExp05Heatmap() {
 }
 
 function renderExp06() {
-  if (activeDomMode === 'tokens') {
+  const title = document.getElementById('exp06Title');
+  const leg = document.getElementById('exp06Legend');
+  if (activeDomMode === 'tokens250') {
+    title.textContent = '250M-Token Run: Validation Perplexity (A100 · Identical Stream)';
+    drawLineChart('chart-exp06', {
+      xLabels: ['31M', '63M', '94M', '125M', '156M', '188M', '219M', '250M'],
+      yMin: 50, yMax: 270, yTicks: 5,
+      yFmt: v => Math.round(v),
+      xTitle: 'Common Crawl (FineWeb-Edu) Tokens Seen (Batch 64 · 7,630 Steps)',
+      series: [
+        { name: 'microgpt_rope', color: cssVar('--violet'), data: [176.80, 107.09, 83.21, 72.83, 65.51, 62.22, 60.13, 58.16], width: 3 },
+        { name: 'microgpt', color: cssVar('--primary'), data: [260.99, 146.44, 103.04, 87.09, 76.95, 72.17, 69.26, 66.84], width: 2.4 },
+        { name: 'domingos_lstm', color: cssVar('--emerald'), data: [180.76, 127.56, 108.05, 96.74, 88.13, 84.44, 81.69, 79.43] },
+        { name: 'domingos_rnn', color: cssVar('--amber'), data: [227.40, 166.59, 139.88, 123.29, 110.03, 104.29, 100.76, 96.96], dash: '5,3' },
+      ],
+      showValues: true
+    });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--violet)"></span>microgpt_rope (58.2 PPL · 247.7k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (66.8 PPL · 268.3k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (79.4 PPL · 203.6k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn (97.0 PPL · 198.5k tok/s)</span>
+    `;
+  } else if (activeDomMode === 'pos250') {
+    title.textContent = '250M-Token Run: Loss by Token Position Bucket';
+    drawLineChart('chart-exp06', {
+      xLabels: ['0–32', '32–64', '64–128', '128–256', '256–512'],
+      yMin: 3.95, yMax: 4.80, yTicks: 5,
+      yFmt: v => v.toFixed(2),
+      xTitle: 'Position Bucket at 250M Tok (GPTs drop monotonically; RNNs drift past 64)',
+      series: [
+        { name: 'microgpt_rope', color: cssVar('--violet'), data: [4.5771, 4.1249, 4.0949, 4.0201, 4.0050], width: 3 },
+        { name: 'microgpt', color: cssVar('--primary'), data: [4.6847, 4.2696, 4.2295, 4.1650, 4.1453], width: 2.4 },
+        { name: 'domingos_lstm', color: cssVar('--emerald'), data: [4.6317, 4.3430, 4.3507, 4.3590, 4.3608] },
+        { name: 'domingos_rnn', color: cssVar('--amber'), data: [4.7575, 4.4991, 4.5469, 4.5776, 4.5659], dash: '5,3' },
+      ],
+      showValues: true
+    });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--violet)"></span>microgpt_rope (4.12 → 4.01 ↓)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (4.27 → 4.15 ↓)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (4.34 → 4.36 ↑)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn (4.50 → 4.57 ↑)</span>
+    `;
+  } else if (activeDomMode === 'tokens') {
+    title.textContent = '65.5M-Token Run: Validation Perplexity (Batch 32 · 4,000 Steps)';
     drawLineChart('chart-exp06', {
       xLabels: ['8.2M', '16.4M', '24.6M', '32.8M', '41.0M', '49.2M', '57.3M', '65.5M'],
       yMin: 110, yMax: 610, yTicks: 5,
@@ -1853,7 +1930,13 @@ function renderExp06() {
       ],
       showValues: true
     });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (10.65M · 191.8k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn + softmax gate (10.65M · 161.6k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (10.64M · 256.9k tok/s)</span>
+    `;
   } else if (activeDomMode === 'time') {
+    title.textContent = '65.5M-Token Run: Validation Perplexity vs Wall-Clock';
     drawLineChart('chart-exp06', {
       xLabels: ['0s', '100s', '200s', '300s', '405s'],
       yMin: 110, yMax: 610, yTicks: 5,
@@ -1878,7 +1961,13 @@ function renderExp06() {
       ],
       showValues: true
     });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (10.65M · 191.8k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn + softmax gate (10.65M · 161.6k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (10.64M · 256.9k tok/s)</span>
+    `;
   } else {
+    title.textContent = '65.5M-Token Run: Loss by Token Position Bucket';
     drawLineChart('chart-exp06', {
       xLabels: ['0–32', '32–64', '64–128', '128–256', '256–512'],
       yMin: 4.70, yMax: 5.50, yTicks: 4,
@@ -1891,6 +1980,11 @@ function renderExp06() {
       ],
       showValues: true
     });
+    leg.innerHTML = `
+      <span class="leg-item"><span class="leg-dot" style="background:var(--emerald)"></span>domingos_lstm (10.65M · 191.8k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--amber)"></span>domingos_rnn + softmax gate (10.65M · 161.6k tok/s)</span>
+      <span class="leg-item"><span class="leg-dot" style="background:var(--primary)"></span>microgpt (10.64M · 256.9k tok/s)</span>
+    `;
   }
 }
 
@@ -1956,6 +2050,15 @@ function runAll0Sim(raw) {
 // =========================================================================
 // WIRE UP CONTROLS
 // =========================================================================
+document.querySelectorAll('#exp01Tabs .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#exp01Tabs .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeExp01Mode = btn.dataset.mode;
+    renderExp01();
+  });
+});
+
 document.querySelectorAll('#graftTabs .tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#graftTabs .tab-btn').forEach(b => b.classList.remove('active'));

@@ -22,6 +22,14 @@ case "$MODE" in
     GROW="--hidden 1280 --intermediate 6912 --layers 28 --heads 20 --kv-heads 4"
     SEQ=2048; BATCH=8; ACC=4; OPT=adamw; LR=3e-5; WARM=100; MIX=""   # batch 8 fits 80 GB; 1e-4 was too high for a 65k-token batch
     GROW_DTYPE=fp32 ;;          # 4 GB checkpoint; keeps the sqrt(d/D) norm scaling exact
+  med)
+    SRC=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B; DST=models/deepseek-r1-qwen-grown-3.8b
+    GROW="--hidden 2560 --intermediate 10240 --layers 32 --heads 20 --kv-heads 4"
+    SEQ=2048; BATCH=1; ACC=32; OPT=adafactor; LR=1e-3; WARM=100
+    GROW_DTYPE=fp32             # 15.2 GB checkpoint; exact fp32 norm scaling, fits A100 40GB cleanly
+    export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    export BENCH_REASONING=1
+    MIX="--mix-dataset open-r1/OpenR1-Math-220k --mix-subset default --mix-ratio 0.2" ;;
   big)
     SRC=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B; DST=models/deepseek-r1-qwen-grown-8b
     GROW="--hidden 4096 --intermediate 14336 --layers 32 --heads 32 --kv-heads 8"
@@ -29,7 +37,7 @@ case "$MODE" in
     GROW_DTYPE=bf16             # 16 GB checkpoint; fp32 would be 33 GB
     export BENCH_REASONING=1                      # source is a reasoning distill: measure GSM8K too
     MIX="--mix-dataset open-r1/OpenR1-Math-220k --mix-subset default --mix-ratio 0.2" ;;
-  *) echo "mode must be small or big"; exit 1 ;;
+  *) echo "mode must be small, med, or big"; exit 1 ;;
 esac
 TPS=$((SEQ * BATCH * ACC)); STEPS=$((TOKENS / TPS))
 HEAL_DATA="${HEAL_DATA:-fineweb}"     # fineweb | self   (self = verified solutions written by the source model)
@@ -67,7 +75,7 @@ if [ ! -f runs/$HEAL/model/config.json ]; then
   echo "== 4/7 heal ($STEPS steps)"
   python heal.py --model "$DST" --name "$HEAL" --device "$DEVICE" \
     --steps "$STEPS" --seq-len "$SEQ" --batch "$BATCH" --grad-accum "$ACC" \
-    --optimizer "$OPT" --lr "$LR" --warmup "$WARM" --eval-every 100 --save-every 1000 --resume $DATA_ARGS \
+    --optimizer "$OPT" --lr "$LR" --warmup "$WARM" --eval-every 100 --save-every 250 --resume $DATA_ARGS \
     2>&1 | tee -a runs/$HEAL.log
 fi
 
@@ -81,7 +89,7 @@ if [ "${CONTROL:-1}" = "1" ]; then
     echo "== 6/7 control: heal the source model itself ($STEPS steps)"
     python heal.py --model "$SRC" --name "control-$TAG" --device "$DEVICE" \
       --steps "$STEPS" --seq-len "$SEQ" --batch "$BATCH" --grad-accum "$ACC" \
-      --optimizer "$OPT" --lr "$LR" --warmup "$WARM" --eval-every 100 --save-every 1000 --resume $DATA_ARGS \
+      --optimizer "$OPT" --lr "$LR" --warmup "$WARM" --eval-every 100 --save-every 250 --resume $DATA_ARGS \
       2>&1 | tee -a runs/control-$TAG.log
   fi
   [ -d runs/bench/$TAG-control ] || ./bench.sh "runs/control-$TAG/model" "$TAG-control" "$LIMIT" "$DEVICE"
